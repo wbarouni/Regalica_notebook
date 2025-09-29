@@ -1,0 +1,1 @@
+Frontend endpoint test - Expected: Regalica Notebook JS page

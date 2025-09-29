@@ -1,0 +1,1 @@
+Backend endpoint test - Expected: {"status":"ready"}
