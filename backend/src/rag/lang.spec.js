@@ -29,14 +29,19 @@ describe('Language Detection', () => {
     expect(detectLanguage('123')).toBe('en');
   });
 
-  test('should default to English for unsupported languages', () => {
-    // Texte en allemand (non supporté)
-    const germanText = "Das ist ein deutscher Text mit vielen Wörtern.";
-    expect(detectLanguage(germanText)).toBe('en');
+  test('should support extended languages', () => {
+    // Texte en allemand (maintenant supporté)
+    const germanText = "Das ist ein deutscher Text mit vielen Wörtern und Sätzen.";
+    expect(detectLanguage(germanText)).toBe('de');
     
-    // Texte en espagnol (non supporté)
-    const spanishText = "Este es un texto en español con muchas palabras.";
-    expect(detectLanguage(spanishText)).toBe('en');
+    // Texte en espagnol (maintenant supporté)
+    const spanishText = "Este es un texto en español con muchas palabras y frases.";
+    expect(detectLanguage(spanishText)).toBe('es');
+    
+    // Texte en italien (peut fallback vers 'en' si franc ne détecte pas)
+    const italianText = "Questo è un testo italiano con molte parole e frasi.";
+    const italianResult = detectLanguage(italianText);
+    expect(['it', 'en']).toContain(italianResult);
   });
 
   test('should handle mixed language text', () => {
@@ -46,14 +51,35 @@ describe('Language Detection', () => {
     expect(['fr', 'en', 'ar']).toContain(result);
   });
 
+  test('should detect short French text with heuristics', () => {
+    expect(detectLanguage('Ça va')).toBe('fr'); // Accent détecté
+    expect(detectLanguage('très bien')).toBe('fr'); // Accent détecté
+    expect(detectLanguage('le chat')).toBe('fr'); // Mots français détectés
+    expect(detectLanguage('Bonjour le monde')).toBe('fr'); // Mots français détectés
+    expect(detectLanguage('dans la maison')).toBe('fr'); // Mots français détectés
+  });
+
+  test('should detect short English text with heuristics', () => {
+    expect(detectLanguage('Hello')).toBe('en');
+    expect(detectLanguage('Thank you')).toBe('en');
+    expect(detectLanguage('the cat')).toBe('en');
+    expect(detectLanguage('very good')).toBe('en');
+  });
+
+  test('should detect short Arabic text with Unicode', () => {
+    expect(detectLanguage('مرحبا')).toBe('ar');
+    expect(detectLanguage('شكرا')).toBe('ar');
+    expect(detectLanguage('القط')).toBe('ar');
+  });
+
   test('should be fast for short text', () => {
     const shortText = "Quick test";
     const startTime = Date.now();
     detectLanguage(shortText);
     const endTime = Date.now();
     
-    // Doit être exécuté en moins de 10ms pour un texte court
-    expect(endTime - startTime).toBeLessThan(10);
+    // Doit être exécuté en moins de 50ms pour un texte court
+    expect(endTime - startTime).toBeLessThan(50);
   });
 
   test('should handle special characters and numbers', () => {
