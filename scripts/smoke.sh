@@ -1,26 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-# Smoke test - Test rapide de santé du système
-echo "Running smoke test..."
+echo "[smoke] wait backend…"
+for i in {1..40}; do
+  curl -fsS http://localhost:8080/health/ready && break
+  sleep 2
+  [[ $i -eq 40 ]] && { echo "backend KO"; exit 1; }
+done
 
-# Test du backend
-echo "Testing backend health endpoint..."
-if curl -sf http://localhost:8080/health/ready > /dev/null 2>&1; then
-    echo "✅ Backend is responding"
-else
-    echo "❌ Backend is not responding"
-    exit 1
-fi
+echo "[smoke] upload sample.pdf"
+SRC_JSON=$(curl -fsS -F file=@tests/fixtures/sample.pdf http://localhost:8080/sources)
+echo "$SRC_JSON"
+SRC_ID=$(echo "$SRC_JSON" | jq -r .source_id)
 
-# Test du frontend
-echo "Testing frontend..."
-if curl -sf http://localhost:4200/ > /dev/null 2>&1; then
-    echo "✅ Frontend is responding"
-else
-    echo "❌ Frontend is not responding"
-    exit 1
-fi
+echo "[smoke] ask chat"
+curl -fsS -H 'Content-Type: application/json' \
+  -d "{\"message\":\"Quel est le titre ?\",\"source_id\":\"$SRC_ID\"}" \
+  http://localhost:8080/chat/ask | tee /tmp/smoke.json
 
-echo "✅ Smoke test passed - all critical services are responding"
-exit 0
+jq -e '.answer' /tmp/smoke.json >/dev/null
+echo "✅ smoke OK"
