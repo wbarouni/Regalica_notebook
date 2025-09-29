@@ -1,0 +1,1 @@
+{"ast":null,"code":"export const environment = {\n  production: false,\n  apiBaseUrl: 'http://localhost:8080',\n  maxUploadMb: 100,\n  pageSize: 20,\n  allowedMimeTypes: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/html', 'text/plain']\n};","map":null,"metadata":{},"sourceType":"module","externalDependencies":[]}

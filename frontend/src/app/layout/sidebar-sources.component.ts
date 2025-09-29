@@ -5,7 +5,7 @@ import { Subject } from 'rxjs';
 import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { UploadDropzoneComponent } from '../features/upload/upload-dropzone.component';
-import { Document, DocumentFilter, PaginatedResponse } from '../core/models';
+import { Document, DocumentFilter, PaginatedResponse } from '../services/ingest.service';
 import { IngestService } from '../services/ingest.service';
 import { ViewerService } from '../core/services/viewer.service';
 
@@ -123,9 +123,9 @@ import { ViewerService } from '../core/services/viewer.service';
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
             </svg>
             <p class="empty-message">
-              {{ filters.search || filters.type || filters.status ? 'No documents match your filters' : 'No documents uploaded yet' }}
+              {{ filters.search || filters.mimeType || filters.status ? 'No documents match your filters' : 'No documents uploaded yet' }}
             </p>
-            <button *ngIf="!showUpload && !filters.search && !filters.type && !filters.status"
+            <button *ngIf="!showUpload && !filters.search && !filters.mimeType && !filters.status"
                     (click)="toggleUpload()"
                     class="upload-cta-btn">
               Upload your first document
@@ -139,7 +139,7 @@ import { ViewerService } from '../core/services/viewer.service';
                (click)="selectDocument(doc)">
             
             <!-- Document Icon -->
-            <div class="document-icon" [class]="'type-' + getDocumentTypeClass(doc.type)">
+            <div class="document-icon" [class]="'type-' + getDocumentTypeClass(doc.mimeType)">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
               </svg>
@@ -152,9 +152,9 @@ import { ViewerService } from '../core/services/viewer.service';
                 <span class="document-size">{{ formatFileSize(doc.size) }}</span>
                 <span class="document-date">{{ formatDate(doc.uploadedAt) }}</span>
               </div>
-              <div class="document-stats" *ngIf="doc.pageCount || doc.chunkCount">
-                <span *ngIf="doc.pageCount" class="stat">{{ doc.pageCount }} pages</span>
-                <span *ngIf="doc.chunkCount" class="stat">{{ doc.chunkCount }} chunks</span>
+              <div class="document-stats" *ngIf="doc.chunksCount || doc.tokensCount">
+                <span *ngIf="doc.chunksCount" class="stat">{{ doc.chunksCount }} chunks</span>
+                <span *ngIf="doc.tokensCount" class="stat">{{ doc.tokensCount }} tokens</span>
               </div>
             </div>
 
@@ -216,13 +216,14 @@ export class SidebarSourcesComponent implements OnInit, OnDestroy {
   totalDocuments = 0;
   currentPage = 1;
   totalPages = 1;
+  pageSize = 20;
   isLoading = false;
   showUpload = false;
   selectedDocumentId: string | null = null;
 
   filters: DocumentFilter = {
     search: '',
-    type: '',
+    mimeType: '',
     status: ''
   };
 
@@ -269,12 +270,15 @@ export class SidebarSourcesComponent implements OnInit, OnDestroy {
     try {
       const response = await this.ingestService.getDocuments({
         page: this.currentPage,
+        pageSize: this.pageSize,
         ...this.filters
-      });
+      }).toPromise();
       
-      this.documents = response.items;
-      this.totalDocuments = response.total;
-      this.totalPages = response.totalPages;
+      if (response) {
+        this.documents = response.items;
+        this.totalDocuments = response.total;
+        this.totalPages = response.totalPages;
+      }
     } catch (error) {
       console.error('Failed to load documents:', error);
       this.documents = [];
@@ -331,17 +335,21 @@ export class SidebarSourcesComponent implements OnInit, OnDestroy {
 
     try {
       // Charger le contenu du document
-      const content = await this.ingestService.getDocumentContent(doc.id);
+      const content = await this.ingestService.getDocumentContent(doc.id).toPromise();
       
-      // Charger dans le viewer
-      this.viewerService.loadDocument({
-        id: doc.id,
-        title: doc.title,
-        content: content.content,
-        pages: content.pages
-      });
-      
-      this.selectedDocumentId = doc.id;
+      if (content) {
+        // Charger dans le viewer
+        this.viewerService.loadDocument({
+          id: doc.id,
+          title: doc.title,
+          pages: (content.pages || []).map(page => ({
+            ...page,
+            spans: []
+          }))
+        });
+        
+        this.selectedDocumentId = doc.id;
+      }
     } catch (error) {
       console.error('Failed to open document:', error);
     }
