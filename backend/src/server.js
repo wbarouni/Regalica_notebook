@@ -42,20 +42,20 @@ app.get("/health/ready", (req, res) => {
 });
 
 // Configuration publique (sans secrets)
-app.get("/config", (req, res) => {
+app.get("/api/config", (req, res) => {
   res.json(getPublicUrlConfig(config));
 });
 
 // Routes d'ingestion
 const ingestRoutes = require("./ingest/routes");
-app.use("/ingest", ingestRoutes);
+app.use("/api/ingest", ingestRoutes);
 
 // Route pour lister les documents (alias pour compatibilité)
-app.use("/docs", ingestRoutes);
+app.use("/api/docs", ingestRoutes);
 
 // Routes RAG
 const ragRoutes = require("./rag/routes");
-app.use("/rag", ragRoutes);
+app.use("/api/rag", ragRoutes);
 
 // Error handler
 app.use(errorHandler);
