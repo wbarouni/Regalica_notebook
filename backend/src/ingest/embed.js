@@ -1,137 +1,254 @@
-const config = require("../config");
-const logger = require("../utils/logger");
+const axios = require('axios');
+const config = require('../config');
+const logger = require('../utils/logger');
 
 /**
- * Génère des embeddings pour les chunks
- * @param {Array} chunks - Les chunks à embedder
- * @returns {Promise<Array>} Les embeddings générés
+ * Client pour le microservice d'embeddings
  */
-const generateEmbeddings = async (chunks) => {
-  const startTime = Date.now();
-  
-  try {
-    const embeddings = [];
-    const batchSize = 32;
+class EmbedderClient {
+  constructor() {
+    this.apiUrl = config.embedApiUrl;
+    this.modelName = config.embedModelName;
+    this.timeout = 30000; // 30 secondes
     
-    for (let i = 0; i < chunks.length; i += batchSize) {
-      const batch = chunks.slice(i, i + batchSize);
-      const batchEmbeddings = await processBatch(batch);
-      embeddings.push(...batchEmbeddings);
-      
-      logger.debug(`Processed embedding batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(chunks.length / batchSize)}`);
+    // Configuration axios
+    this.client = axios.create({
+      baseURL: this.apiUrl,
+      timeout: this.timeout,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    logger.info(`[embed] Client initialisé - API: ${this.apiUrl}, Modèle: ${this.modelName}`);
+  }
+
+  /**
+   * Vérifie la santé du microservice
+   */
+  async healthCheck() {
+    try {
+      const response = await this.client.get('/health');
+      return response.data;
+    } catch (error) {
+      logger.error(`[embed] Healthcheck failed: ${error.message}`);
+      throw new Error(`Microservice embedder non disponible: ${error.message}`);
     }
+  }
+
+  /**
+   * Récupère les informations du modèle
+   */
+  async getModelInfo() {
+    try {
+      const response = await this.client.get('/info');
+      return response.data;
+    } catch (error) {
+      logger.error(`[embed] Erreur récupération info modèle: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Génère des embeddings pour une liste de textes
+   * @param {string[]} texts - Liste des textes
+   * @returns {Promise<{vectors: number[][], dim: number, processing_time_ms: number}>}
+   */
+  async generateEmbeddings(texts) {
+    if (!texts || texts.length === 0) {
+      throw new Error('Liste de textes vide');
+    }
+
+    const startTime = Date.now();
     
-    const duration = Date.now() - startTime;
-    logger.info(`Generated ${embeddings.length} embeddings in ${duration}ms`);
+    try {
+      logger.info(`[embed] Génération embeddings pour ${texts.length} textes`);
+      
+      const response = await this.client.post('/embed', {
+        texts: texts
+      });
+
+      const { vectors, dim, processing_time_ms } = response.data;
+      const totalTime = Date.now() - startTime;
+
+      // Validation des embeddings
+      if (!vectors || vectors.length !== texts.length) {
+        throw new Error(`Nombre d'embeddings incorrect: attendu ${texts.length}, reçu ${vectors?.length || 0}`);
+      }
+
+      // Vérification de la dimension
+      if (vectors.length > 0 && vectors[0].length !== dim) {
+        throw new Error(`Dimension incorrecte: attendue ${dim}, reçue ${vectors[0].length}`);
+      }
+
+      // Vérification de la normalisation L2
+      for (let i = 0; i < Math.min(vectors.length, 5); i++) {
+        const norm = Math.sqrt(vectors[i].reduce((sum, val) => sum + val * val, 0));
+        if (Math.abs(norm - 1.0) > 0.01) {
+          logger.warn(`[embed] Vecteur ${i} non normalisé: norme = ${norm.toFixed(4)}`);
+        }
+      }
+
+      logger.info(`[embed] Embeddings générés: ${vectors.length} vecteurs, dim=${dim}, temps=${totalTime}ms (API: ${processing_time_ms}ms)`);
+
+      return {
+        vectors,
+        dim,
+        processing_time_ms: totalTime,
+        api_time_ms: processing_time_ms
+      };
+
+    } catch (error) {
+      const totalTime = Date.now() - startTime;
+      logger.error(`[embed] Erreur génération embeddings (${totalTime}ms): ${error.message}`);
+      
+      if (error.response) {
+        logger.error(`[embed] Réponse API: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
+      }
+      
+      throw new Error(`Génération embeddings échouée: ${error.message}`);
+    }
+  }
+
+  /**
+   * Génère des embeddings par batch avec gestion des erreurs
+   * @param {string[]} texts - Liste des textes
+   * @param {number} batchSize - Taille des batches (défaut: 50)
+   * @returns {Promise<{vectors: number[][], dim: number, stats: object}>}
+   */
+  async generateEmbeddingsBatch(texts, batchSize = 50) {
+    if (!texts || texts.length === 0) {
+      return { vectors: [], dim: 0, stats: { total: 0, batches: 0, total_time_ms: 0 } };
+    }
+
+    const startTime = Date.now();
+    const allVectors = [];
+    let totalApiTime = 0;
+    let dimension = 0;
+
+    logger.info(`[embed] Génération par batch: ${texts.length} textes, taille batch=${batchSize}`);
+
+    for (let i = 0; i < texts.length; i += batchSize) {
+      const batch = texts.slice(i, i + batchSize);
+      const batchIndex = Math.floor(i / batchSize) + 1;
+      const totalBatches = Math.ceil(texts.length / batchSize);
+
+      try {
+        logger.info(`[embed] Traitement batch ${batchIndex}/${totalBatches} (${batch.length} textes)`);
+        
+        const result = await this.generateEmbeddings(batch);
+        
+        allVectors.push(...result.vectors);
+        totalApiTime += result.api_time_ms;
+        dimension = result.dim;
+
+      } catch (error) {
+        logger.error(`[embed] Erreur batch ${batchIndex}: ${error.message}`);
+        throw new Error(`Échec batch ${batchIndex}/${totalBatches}: ${error.message}`);
+      }
+    }
+
+    const totalTime = Date.now() - startTime;
+    const stats = {
+      total: texts.length,
+      batches: Math.ceil(texts.length / batchSize),
+      batch_size: batchSize,
+      total_time_ms: totalTime,
+      api_time_ms: totalApiTime,
+      avg_time_per_text_ms: Math.round(totalTime / texts.length)
+    };
+
+    logger.info(`[embed] Batch terminé: ${stats.total} embeddings en ${stats.total_time_ms}ms (${stats.avg_time_per_text_ms}ms/texte)`);
+
+    return {
+      vectors: allVectors,
+      dim: dimension,
+      stats
+    };
+  }
+}
+
+// Instance singleton
+let embedderClient = null;
+
+/**
+ * Récupère l'instance du client embedder
+ */
+function getEmbedderClient() {
+  if (!embedderClient) {
+    embedderClient = new EmbedderClient();
+  }
+  return embedderClient;
+}
+
+/**
+ * Génère des embeddings pour une liste de chunks
+ * @param {Array} chunks - Liste des chunks avec id et text
+ * @returns {Promise<Array>} - Liste des embeddings avec chunk_id et vector
+ */
+async function generateEmbeddings(chunks) {
+  if (!chunks || chunks.length === 0) {
+    return [];
+  }
+
+  const client = getEmbedderClient();
+  
+  // Extraction des textes
+  const texts = chunks.map(chunk => chunk.text);
+  const chunkIds = chunks.map(chunk => chunk.id);
+
+  try {
+    // Génération des embeddings
+    const result = await client.generateEmbeddingsBatch(texts);
     
-    return embeddings;
+    // Association des vecteurs aux chunk_ids
+    const embeddings = result.vectors.map((vector, index) => ({
+      chunk_id: chunkIds[index],
+      vector: vector,
+      dim: result.dim
+    }));
+
+    logger.info(`[embed] Embeddings associés: ${embeddings.length} chunks`);
     
+    return {
+      embeddings,
+      stats: result.stats,
+      model_info: {
+        name: client.modelName,
+        dimension: result.dim
+      }
+    };
+
   } catch (error) {
-    logger.error("Error generating embeddings:", error);
+    logger.error(`[embed] Erreur génération embeddings pour chunks: ${error.message}`);
     throw error;
   }
-};
+}
 
 /**
- * Traite un batch de chunks pour générer les embeddings
- * @param {Array} batch - Le batch de chunks
- * @returns {Promise<Array>} Les embeddings du batch
+ * Teste la connexion au microservice embedder
  */
-const processBatch = async (batch) => {
-  const embeddings = [];
-  
-  for (const chunk of batch) {
-    const embedding = await generateSingleEmbedding(chunk.text);
-    embeddings.push({
-      chunk_id: chunk.id, // Sera défini après insertion en DB
-      model: config.embedModel,
-      dim: config.embedDim,
-      vec: embedding
-    });
+async function testEmbedderConnection() {
+  try {
+    const client = getEmbedderClient();
+    const health = await client.healthCheck();
+    const info = await client.getModelInfo();
+    
+    logger.info(`[embed] Test connexion réussi - Modèle: ${info.model_name}, Dimension: ${info.dimension}`);
+    
+    return {
+      status: 'ok',
+      health,
+      info
+    };
+  } catch (error) {
+    logger.error(`[embed] Test connexion échoué: ${error.message}`);
+    throw error;
   }
-  
-  return embeddings;
-};
+}
 
-/**
- * Génère un embedding pour un texte unique
- * @param {string} text - Le texte à embedder
- * @returns {Promise<number[]>} Le vecteur d'embedding
- */
-const generateSingleEmbedding = async (text) => {
-  // Simulation d'embedding réel selon le modèle configuré
-  if (config.embedModel === "e5") {
-    return generateE5Embedding(text);
-  } else if (config.embedModel === "nomic") {
-    return generateNomicEmbedding(text);
-  } else {
-    throw new Error(`Unsupported embedding model: ${config.embedModel}`);
-  }
+module.exports = {
+  generateEmbeddings,
+  testEmbedderConnection,
+  getEmbedderClient
 };
-
-/**
- * Génère un embedding E5 (dimension 1024)
- * @param {string} text - Le texte
- * @returns {number[]} Vecteur de dimension 1024
- */
-const generateE5Embedding = (text) => {
-  // Simulation déterministe basée sur le hash du texte
-  const hash = simpleHash(text);
-  const vector = [];
-  
-  for (let i = 0; i < 1024; i++) {
-    // Génération pseudo-aléatoire déterministe
-    const seed = hash + i;
-    vector.push(Math.sin(seed) * Math.cos(seed * 0.7) * Math.tanh(seed * 0.3));
-  }
-  
-  // Normalisation L2
-  return normalizeVector(vector);
-};
-
-/**
- * Génère un embedding Nomic (dimension 768)
- * @param {string} text - Le texte
- * @returns {number[]} Vecteur de dimension 768
- */
-const generateNomicEmbedding = (text) => {
-  // Simulation déterministe basée sur le hash du texte
-  const hash = simpleHash(text);
-  const vector = [];
-  
-  for (let i = 0; i < 768; i++) {
-    // Génération pseudo-aléatoire déterministe différente d'E5
-    const seed = hash + i * 1.3;
-    vector.push(Math.cos(seed) * Math.sin(seed * 0.9) * Math.tanh(seed * 0.5));
-  }
-  
-  // Normalisation L2
-  return normalizeVector(vector);
-};
-
-/**
- * Hash simple pour générer des embeddings déterministes
- * @param {string} text - Le texte
- * @returns {number} Hash numérique
- */
-const simpleHash = (text) => {
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) {
-    const char = text.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return Math.abs(hash);
-};
-
-/**
- * Normalise un vecteur (norme L2)
- * @param {number[]} vector - Le vecteur à normaliser
- * @returns {number[]} Le vecteur normalisé
- */
-const normalizeVector = (vector) => {
-  const norm = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
-  return vector.map(val => val / norm);
-};
-
-module.exports = { generateEmbeddings };

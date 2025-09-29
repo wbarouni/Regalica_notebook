@@ -255,14 +255,13 @@ const persistDocument = async ({ title, mime, bytes, sha256, extractionResult, c
       id: chunkIds[index]
     }));
     
-    const embeddings = await generateEmbeddings(chunksWithIds);
+    const embeddingResult = await generateEmbeddings(chunksWithIds);
     
-    for (let i = 0; i < embeddings.length; i++) {
-      const embedding = embeddings[i];
+    for (const embedding of embeddingResult.embeddings) {
       await client.query(`
         INSERT INTO ${config.dbSchema}.embeddings (chunk_id, model, dim, vec)
         VALUES ($1, $2, $3, $4)
-      `, [chunkIds[i], embedding.model, embedding.dim, embedding.vec]);
+      `, [embedding.chunk_id, embeddingResult.model_info.name, embedding.dim, JSON.stringify(embedding.vector)]);
     }
     
     const embedTime = Date.now() - embedStart;

@@ -112,6 +112,11 @@ Le Bloc 2 introduit une configuration complète via des variables d'environnemen
     ./scripts/migrate.sh up
     ```
 
+-   **Tester le microservice embedder :**
+    ```bash
+    ./scripts/test_embedder.sh
+    ```
+
 -   **Lancer un benchmark d'ingestion :**
     ```bash
     ./scripts/bench_ingest.sh <path_to_file>
@@ -129,3 +134,27 @@ Le Bloc 2 introduit une configuration complète via des variables d'environnemen
 -   `400 NO_FILE` : Aucun fichier fourni.
 -   `500 INTERNAL_ERROR` : Erreur interne du serveur.
 
+
+
+### Microservice Embedder
+
+Le Bloc 2 inclut un microservice Python dédié à la génération d'embeddings réels utilisant des modèles open source.
+
+**Modèles supportés :**
+- `intfloat/multilingual-e5-large` (1024 dim) - **défaut**
+- `nomic-ai/nomic-embed-text-v1.5` (768 dim)
+- `sentence-transformers/all-MiniLM-L6-v2` (384 dim)
+- `intfloat/e5-large-v2` (1024 dim)
+
+**Configuration :**
+Pour changer de modèle, modifiez la variable `EMBED_MODEL_NAME` dans votre fichier `.env` :
+```bash
+EMBED_MODEL_NAME=nomic-ai/nomic-embed-text-v1.5
+```
+
+**Endpoints internes :**
+- `GET /health` : Vérification de santé
+- `GET /info` : Informations sur le modèle
+- `POST /embed` : Génération d'embeddings
+
+Le microservice n'est pas exposé publiquement et n'est accessible qu'au backend via le réseau Docker interne.

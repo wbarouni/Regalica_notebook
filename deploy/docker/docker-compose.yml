@@ -5,6 +5,7 @@ volumes:
   redis_data:
   ollama_models:
   uploads:
+  embedder_cache:
 
 services:
   postgres:
@@ -52,6 +53,22 @@ services:
     ports: ["11434:11434"]
     restart: unless-stopped
 
+  embedder:
+    build: ../../embedder
+    environment:
+      EMBED_MODEL_NAME: ${EMBED_MODEL_NAME:-intfloat/multilingual-e5-large}
+      HOST: 0.0.0.0
+      PORT: 8000
+    volumes:
+      - embedder_cache:/root/.cache
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    restart: unless-stopped
+
   backend:
     build: ../../backend
     environment:
@@ -60,8 +77,8 @@ services:
       DB_URL: postgres://postgres:postgres@postgres:5432/notebook
       DB_SCHEMA: nbk
       MAX_UPLOAD_MB: 100
-      EMBED_MODEL: e5
-      EMBED_DIM: 1024
+      EMBED_API_URL: http://embedder:8000
+      EMBED_MODEL_NAME: ${EMBED_MODEL_NAME:-intfloat/multilingual-e5-large}
       CHUNK_TOKENS_MAX: 1800
       CHUNK_OVERLAP_PCT: 0.25
       ALLOWED_MIME: application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/html,text/plain
@@ -81,6 +98,8 @@ services:
       redis:
         condition: service_healthy
       ollama:
+        condition: service_healthy
+      embedder:
         condition: service_healthy
     restart: unless-stopped
 

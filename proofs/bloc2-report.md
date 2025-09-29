@@ -75,16 +75,34 @@ L'interface utilisateur du module Sources a été développée pour permettre l'
 }
 ```
 
-## 5. Métriques de Performance
+## 5. Microservice Embedder
 
-Les métriques de performance seront mesurées à l'aide du script `scripts/bench_ingest.sh`.
+Le Bloc 2 intègre un microservice Python dédié utilisant `sentence-transformers` pour la génération d'embeddings réels.
 
--   **Temps d'ingestion E2E** : Mesure du temps total entre la requête d'upload et la réponse.
--   **Temps d'embedding par chunk** : Mesuré dans les logs du backend.
+**Architecture :**
+- **Service** : FastAPI avec `sentence-transformers`
+- **Modèle par défaut** : `intfloat/multilingual-e5-large` (1024 dimensions)
+- **Normalisation** : Vecteurs L2 normalisés (norme = 1.0)
+- **Communication** : HTTP interne via Docker network
 
-*(Les résultats des benchmarks seront ajoutés ici après les tests)*
+**Validation des embeddings :**
+- Dimension correcte selon le modèle
+- Normalisation L2 vérifiée (norme ≈ 1.0)
+- Aucune simulation ou mock
 
-## 6. Indicateurs de Volumétrie
+## 6. Métriques de Performance
+
+Les métriques de performance sont mesurées à l'aide du script `scripts/bench_ingest.sh`.
+
+**Métriques collectées :**
+-   **Temps d'ingestion E2E** : Temps total entre requête d'upload et réponse
+-   **Temps d'embedding par chunk** : Latence moyenne de génération d'embedding
+-   **Throughput embeddings** : Nombre de chunks traités par seconde
+-   **Dimension des vecteurs** : Validation de la dimension selon le modèle
+
+*(Les résultats des benchmarks en conditions réelles seront ajoutés après déploiement)*
+
+## 7. Indicateurs de Volumétrie
 
 Les statistiques de volumétrie (nombre de pages, chunks) sont retournées par l'API d'upload et visibles dans l'interface utilisateur.
 
