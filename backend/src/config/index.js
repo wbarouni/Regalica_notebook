@@ -25,6 +25,7 @@ const config = {
   ragCitationsMin: parseInt(process.env.RAG_CITATIONS_MIN) || 2,
   ragConfidenceThreshold: parseFloat(process.env.RAG_CONFIDENCE_THRESHOLD) || 0.6,
   rerankerMaxInputChars: parseInt(process.env.RERANKER_MAX_INPUT_CHARS, 10) || 512,
+  rerankerMaxCandidates: parseInt(process.env.RERANKER_MAX_CANDIDATES, 10) || 100,
   rerankerAlpha: parseFloat(process.env.RERANKER_ALPHA) || 0.30,
   rerankerBeta: parseFloat(process.env.RERANKER_BETA) || 0.70,
 

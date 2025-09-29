@@ -10,17 +10,38 @@ const logger = require('../utils/logger');
  */
 async function rerank(query, candidates) {
   if (!query || !query.trim()) {
-    throw new Error('Requête vide');
+    throw new Error('Query cannot be empty');
   }
 
   if (!candidates || !Array.isArray(candidates) || candidates.length === 0) {
-    logger.warn('[rag/rerank] Aucun candidat à réordonner');
+    logger.warn('[rag/rerank] No candidates to rerank');
     return [];
   }
 
-  if (candidates.length > 200) {
-    logger.warn(`[rag/rerank] Trop de candidats (${candidates.length}), limitation à 200`);
-    candidates = candidates.slice(0, 200);
+  // Validation stricte du nombre maximum de candidats depuis l'environnement
+  const maxCandidates = config.rerankerMaxCandidates || 100;
+  if (candidates.length > maxCandidates) {
+    logger.warn(`[rag/rerank] Too many candidates (${candidates.length}), limiting to ${maxCandidates}`);
+    candidates = candidates.slice(0, maxCandidates);
+  }
+
+  // Validation des candidats vides
+  const validCandidates = candidates.filter(candidate => {
+    if (!candidate || !candidate.text || candidate.text.trim().length === 0) {
+      logger.debug('[rag/rerank] Skipping empty candidate');
+      return false;
+    }
+    return true;
+  });
+
+  if (validCandidates.length === 0) {
+    logger.warn('[rag/rerank] No valid candidates after filtering');
+    return [];
+  }
+
+  if (validCandidates.length !== candidates.length) {
+    logger.info(`[rag/rerank] Filtered ${candidates.length - validCandidates.length} empty candidates`);
+    candidates = validCandidates;
   }
 
   const startTime = Date.now();
