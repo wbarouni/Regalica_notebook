@@ -18,7 +18,7 @@ RUN npm run build
 RUN npm install -g http-server
 
 # Exposer le port
-EXPOSE 4200
+EXPOSE 80
 
 # Démarrer l'application
-CMD ["http-server", "dist/regalica-frontend", "-p", "4200", "-a", "0.0.0.0"]
+CMD ["http-server", "dist/regalica-frontend", "-p", "80", "-a", "0.0.0.0"]

@@ -10,7 +10,7 @@ reset:
 	./scripts/dev-reset.sh
 
 check:
-	./scripts/quality-check.sh && ./scripts/healthcheck.sh
+	./scripts/denylist.sh && ./scripts/healthcheck.sh
 
 smoke:
-	./scripts/healthcheck.sh
+	./scripts/smoke.sh
