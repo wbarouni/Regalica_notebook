@@ -417,16 +417,28 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   /**
-   * Clique sur une citation
+   * Clique sur une citation - déclenche le scroll et la surbrillance dans le viewer
    */
   onCitationClick(source: RagSource): void {
-    this.viewerService.scrollToSpan({
-      docId: source.id,
-      page: source.page,
-      spanStart: source.spanStart,
-      spanEnd: source.spanEnd,
-      chunkId: source.chunkId
-    });
+    console.log('ChatPanel: Citation clicked', source);
+    
+    // Utiliser la nouvelle signature scrollToSpan avec paramètres séparés
+    this.viewerService.scrollToSpan(
+      source.id,           // docId
+      source.page,         // page (optionnel)
+      source.spanStart,    // start
+      source.spanEnd,      // end
+      source.chunkId       // chunkId (optionnel)
+    );
+    
+    // Optionnel: feedback visuel sur la citation cliquée
+    const citationElement = document.querySelector(`[data-source-id="${source.id}"][data-span-start="${source.spanStart}"]`);
+    if (citationElement) {
+      citationElement.classList.add('citation-clicked');
+      setTimeout(() => {
+        citationElement.classList.remove('citation-clicked');
+      }, 1000);
+    }
   }
 
   /**

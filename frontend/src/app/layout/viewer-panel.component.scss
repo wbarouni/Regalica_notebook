@@ -285,6 +285,36 @@
       border: 1px solid #10b981;
     }
   }
+  
+  // Nouveaux styles pour les spans de surbrillance DOM
+  .viewer-highlight-span {
+    background: rgba(251, 191, 36, 0.3);
+    border: 1px solid #f59e0b;
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.25rem;
+    transition: all 0.3s ease;
+    
+    &.viewer-highlight-active {
+      background: rgba(251, 191, 36, 0.5);
+      border-color: #d97706;
+      box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+    }
+    
+    &.viewer-highlight-flash {
+      animation: highlightFlash 2s ease-in-out;
+    }
+  }
+  
+  // Éléments avec attributs data-span (pour hover)
+  [data-span-start][data-span-end] {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-radius: 0.25rem;
+    
+    &:hover {
+      background: rgba(229, 231, 235, 0.5);
+    }
+  }
 }
 
 // Navigation
@@ -386,6 +416,21 @@
   0% { opacity: 0.3; }
   50% { opacity: 0.8; }
   100% { opacity: 0.3; }
+}
+
+@keyframes highlightFlash {
+  0% { 
+    background: rgba(251, 191, 36, 0.3);
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+  }
+  50% { 
+    background: rgba(251, 191, 36, 0.7);
+    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.4);
+  }
+  100% { 
+    background: rgba(251, 191, 36, 0.3);
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+  }
 }
 
 .highlight-span.highlight-citation {
