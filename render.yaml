@@ -68,6 +68,21 @@ services:
     healthCheckPath: /health
     autoDeploy: true
 
+  # Microservice Reranker (Bloc 3)
+  - type: web
+    name: regalica-reranker
+    runtime: python
+    region: frankfurt
+    plan: starter
+    rootDir: ./reranker
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port 8000
+    envVars:
+      - key: RERANKER_MODEL_NAME
+        value: BAAI/bge-reranker-v2-m3
+    healthCheckPath: /health
+    autoDeploy: true
+
   # Frontend Angular
   - type: static
     name: regalica-frontend
