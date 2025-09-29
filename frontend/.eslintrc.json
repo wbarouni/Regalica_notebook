@@ -1,0 +1,158 @@
+{
+  "root": true,
+  "ignorePatterns": [
+    "projects/**/*",
+    "dist/**/*",
+    "node_modules/**/*",
+    "coverage/**/*",
+    "test-results/**/*",
+    "playwright-report/**/*"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "*.ts"
+      ],
+      "extends": [
+        "eslint:recommended",
+        "@typescript-eslint/recommended",
+        "@typescript-eslint/recommended-requiring-type-checking",
+        "@angular-eslint/recommended",
+        "@angular-eslint/template/process-inline-templates"
+      ],
+      "parserOptions": {
+        "project": [
+          "tsconfig.json"
+        ],
+        "createDefaultProgram": true
+      },
+      "rules": {
+        // Règles strictes selon spécifications
+        "@typescript-eslint/no-unused-vars": "error",
+        "@typescript-eslint/no-explicit-any": "error",
+        "@typescript-eslint/explicit-function-return-type": "warn",
+        "@typescript-eslint/no-non-null-assertion": "error",
+        "@typescript-eslint/prefer-nullish-coalescing": "error",
+        "@typescript-eslint/prefer-optional-chain": "error",
+        "@typescript-eslint/no-floating-promises": "error",
+        "@typescript-eslint/await-thenable": "error",
+        "@typescript-eslint/no-misused-promises": "error",
+        
+        // Règles de qualité de code
+        "no-console": "warn",
+        "no-debugger": "error",
+        "no-alert": "error",
+        "no-var": "error",
+        "prefer-const": "error",
+        "prefer-arrow-callback": "error",
+        "arrow-spacing": "error",
+        "no-duplicate-imports": "error",
+        "no-unused-expressions": "error",
+        
+        // Règles Angular spécifiques
+        "@angular-eslint/component-class-suffix": "error",
+        "@angular-eslint/directive-class-suffix": "error",
+        "@angular-eslint/no-input-rename": "error",
+        "@angular-eslint/no-output-rename": "error",
+        "@angular-eslint/use-lifecycle-interface": "error",
+        "@angular-eslint/component-selector": [
+          "error",
+          {
+            "type": "element",
+            "prefix": "app",
+            "style": "kebab-case"
+          }
+        ],
+        "@angular-eslint/directive-selector": [
+          "error",
+          {
+            "type": "attribute",
+            "prefix": "app",
+            "style": "camelCase"
+          }
+        ],
+        
+        // Règles de sécurité
+        "no-eval": "error",
+        "no-implied-eval": "error",
+        "no-new-func": "error",
+        "no-script-url": "error",
+        
+        // Règles de performance
+        "@typescript-eslint/prefer-for-of": "error",
+        "@typescript-eslint/prefer-includes": "error",
+        "@typescript-eslint/prefer-string-starts-ends-with": "error",
+        
+        // Règles de lisibilité
+        "max-len": [
+          "warn",
+          {
+            "code": 120,
+            "ignoreUrls": true,
+            "ignoreStrings": true,
+            "ignoreTemplateLiterals": true
+          }
+        ],
+        "complexity": ["warn", 10],
+        "max-depth": ["warn", 4],
+        "max-params": ["warn", 5],
+        
+        // Interdictions spécifiques selon denylist
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "Literal[value=/mock|placeholder|simulate|lorem/i]",
+            "message": "Denylist violation: mock/placeholder/simulate/lorem patterns are forbidden"
+          },
+          {
+            "selector": "Literal[value=/localhost|127\\.0\\.0\\.1/]",
+            "message": "Denylist violation: hardcoded localhost/127.0.0.1 URLs are forbidden"
+          },
+          {
+            "selector": "Literal[value=/\\.\\.\\.$/]",
+            "message": "Denylist violation: ellipsis (...) placeholders are forbidden"
+          }
+        ],
+        
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "localStorage",
+            "message": "Use proper service abstraction instead of direct localStorage access"
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "*.html"
+      ],
+      "extends": [
+        "@angular-eslint/template/recommended",
+        "@angular-eslint/template/accessibility"
+      ],
+      "rules": {
+        "@angular-eslint/template/alt-text": "error",
+        "@angular-eslint/template/elements-content": "error",
+        "@angular-eslint/template/label-has-associated-control": "error",
+        "@angular-eslint/template/table-scope": "error",
+        "@angular-eslint/template/valid-aria": "error",
+        "@angular-eslint/template/click-events-have-key-events": "error",
+        "@angular-eslint/template/mouse-events-have-key-events": "error",
+        "@angular-eslint/template/no-autofocus": "error",
+        "@angular-eslint/template/no-distracting-elements": "error",
+        "@angular-eslint/template/no-positive-tabindex": "error"
+      }
+    },
+    {
+      "files": [
+        "*.spec.ts"
+      ],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-non-null-assertion": "off",
+        "no-console": "off"
+      }
+    }
+  ]
+}
