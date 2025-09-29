@@ -1,5 +1,6 @@
 # render.yaml
-# Configuration pour déployer Regalica Notebook sur Render
+# Configuration complète pour déployer Regalica Notebook sur Render
+# Inclut tous les microservices et fonctionnalités
 
 services:
   # Backend Express.js
@@ -9,12 +10,14 @@ services:
     region: frankfurt
     plan: starter
     rootDir: ./backend
-    buildCommand: npm ci --legacy-peer-deps
+    buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /health/ready
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
       - key: SERVER_PORT
         value: 10000
       - key: LOG_LEVEL
@@ -27,10 +30,14 @@ services:
         value: nbk
       - key: MAX_UPLOAD_MB
         value: 100
+      # Microservice Embedder
       - key: EMBED_API_URL
-        value: http://embedder:8000
+        fromService:
+          type: web
+          name: regalica-embedder
+          property: host
       - key: EMBED_MODEL_NAME
-        value: intfloat/multilingual-e5-large
+        value: sentence-transformers/all-MiniLM-L6-v2
       - key: CHUNK_TOKENS_MAX
         value: 1800
       - key: CHUNK_OVERLAP_PCT
@@ -39,6 +46,7 @@ services:
         value: application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/html,text/plain
       - key: OCR_ENABLE
         value: false
+      # Microservice Reranker et LLM
       - key: RAG_TOP_K
         value: 50
       - key: RAG_CITATIONS_MIN
@@ -46,14 +54,19 @@ services:
       - key: RAG_CONFIDENCE_THRESHOLD
         value: 0.6
       - key: RERANKER_API_URL
-        value: http://reranker:8000
+        fromService:
+          type: web
+          name: regalica-reranker
+          property: host
       - key: LLM_API_URL
-        value: http://ollama:11434
+        value: https://api.openai.com/v1
       - key: LLM_MODEL_NAME
-        value: qwen2:7b-instruct
+        value: gpt-3.5-turbo
+      - key: OPENAI_API_KEY
+        sync: false
     autoDeploy: true
 
-  # Microservice Embedder
+  # Microservice Embedder (Python)
   - type: web
     name: regalica-embedder
     runtime: python
@@ -61,14 +74,16 @@ services:
     plan: starter
     rootDir: ./embedder
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app:app --host 0.0.0.0 --port 8000
-    envVars:
-      - key: EMBED_MODEL_NAME
-        value: intfloat/multilingual-e5-large
+    startCommand: python app.py
     healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: MODEL_NAME
+        value: sentence-transformers/all-MiniLM-L6-v2
     autoDeploy: true
 
-  # Microservice Reranker (Bloc 3)
+  # Microservice Reranker (Python)
   - type: web
     name: regalica-reranker
     runtime: python
@@ -76,21 +91,21 @@ services:
     plan: starter
     rootDir: ./reranker
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app:app --host 0.0.0.0 --port 8000
-    envVars:
-      - key: RERANKER_MODEL_NAME
-        value: BAAI/bge-reranker-v2-m3
+    startCommand: python app.py
     healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: MODEL_NAME
+        value: BAAI/bge-reranker-v2-m3
     autoDeploy: true
 
   # Frontend Angular
-  - type: web
+  - type: static
     name: regalica-frontend
-    runtime: static
-    plan: starter
-    rootDir: ./frontend
-    buildCommand: npm ci --legacy-peer-deps && npm run build -- --configuration=production
+    buildCommand: npm ci && npm run build -- --configuration=production
     staticPublishPath: ./dist/regalica-frontend/browser
+    rootDir: ./frontend
     envVars:
       - key: NODE_ENV
         value: production
@@ -101,6 +116,9 @@ services:
       - path: /*
         name: X-Content-Type-Options
         value: nosniff
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=3600
     routes:
       - type: rewrite
         source: /*
