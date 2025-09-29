@@ -167,23 +167,27 @@ EMBED_MODEL_NAME=nomic-ai/nomic-embed-text-v1.5
 
 Le microservice n'est pas exposé publiquement et n'est accessible qu'au backend via le réseau Docker interne.
 
-### Déploiement sur Render
+### Déploiement
 
-Le projet est configuré pour être déployé sur Render avec le fichier `render.yaml`. La configuration inclut :
+Le projet est conçu pour être déployé sur différentes plateformes cloud avec une architecture modulaire.
 
-**Services déployés :**
-- **Backend Express.js** : API principale avec endpoint `/health/ready`
-- **Microservice Embedder** : Service Python pour la génération d'embeddings
-- **Frontend Angular** : Interface utilisateur statique
-- **Base de données PostgreSQL** : Stockage des données avec extensions vectorielles
+**Architecture :**
+- **Frontend Angular** : Application statique (build avec `ng build`)
+- **Backend Express.js** : API REST avec endpoints `/health/ready`, `/ingest/*`, `/rag/*`
+- **Microservices Python** : Services indépendants (embedder, reranker)
+- **Base de données** : PostgreSQL avec extension pgvector
 
-**Variables d'environnement requises :**
-- `EMBED_API_URL` : URL du microservice embedder
-- `EMBED_MODEL_NAME` : Nom du modèle d'embeddings
-- `RAG_TOP_K`, `RAG_CITATIONS_MIN`, `RAG_CONFIDENCE_THRESHOLD` : Configuration RAG
-- `RERANKER_API_URL`, `LLM_API_URL`, `LLM_MODEL_NAME` : URLs des microservices
+**Configuration :**
+- Variables d'environnement définies dans `.env.example`
+- Configuration CORS pour les origines autorisées
+- URLs configurables pour les microservices externes
 
-**Pour déployer :**
-1. Connectez votre repository GitHub à Render
-2. Les services se déploieront automatiquement selon la configuration
-3. L'application sera accessible via les URLs Render générées
+**Développement local :**
+```bash
+# Lancer avec Docker Compose
+make up
+
+# Ou manuellement
+npm start --prefix frontend
+npm start --prefix backend
+```
