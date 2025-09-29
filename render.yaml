@@ -45,7 +45,6 @@ services:
   - type: web
     name: regalica-frontend
     runtime: static
-    region: frankfurt
     plan: free
     rootDir: ./frontend
     buildCommand: npm install --legacy-peer-deps && npm run build -- --configuration=production
