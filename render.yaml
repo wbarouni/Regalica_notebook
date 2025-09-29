@@ -1,0 +1,47 @@
+# render.yaml
+# Configuration pour déployer Regalica Notebook sur Render
+
+services:
+  # Backend Express.js
+  - type: web
+    name: regalica-backend
+    env: node
+    region: frankfurt  # ou oregon, singapore selon votre localisation
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: regalica-db
+          property: connectionString
+    autoDeploy: true
+
+  # Frontend Angular
+  - type: web
+    name: regalica-frontend
+    env: static
+    region: frankfurt
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist/regalica-notebook
+    envVars:
+      - key: API_URL
+        value: https://regalica-backend.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    autoDeploy: true
+
+# Base de données PostgreSQL
+databases:
+  - name: regalica-db
+    databaseName: regalica
+    user: regalica_user
+    plan: free
+    region: frankfurt
