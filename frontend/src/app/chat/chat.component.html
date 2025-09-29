@@ -58,7 +58,7 @@
     </div>
 
     <!-- Chat Messages -->
-    <div *ngFor="let message of messages; trackBy: (index, item) => item.id" 
+    <div *ngFor="let message of messages; trackBy: trackByMessageId" 
          class="message-wrapper"
          [attr.data-testid]="'message-' + message.role">
       

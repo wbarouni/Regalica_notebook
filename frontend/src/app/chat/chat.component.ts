@@ -187,6 +187,13 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   /**
+   * TrackBy function pour optimiser le rendu des messages
+   */
+  trackByMessageId(index: number, message: ChatMessage): string {
+    return message.id;
+  }
+
+  /**
    * Met le focus sur le champ de saisie
    */
   private focusInput(): void {

@@ -69,7 +69,7 @@ export interface ChatMessage {
   providedIn: 'root'
 })
 export class RagService {
-  private readonly apiUrl = `${environment.apiUrl}/rag`;
+  private readonly apiUrl = `${environment.apiBaseUrl}/rag`;
   private messagesSubject = new BehaviorSubject<ChatMessage[]>([]);
   public messages$ = this.messagesSubject.asObservable();
   
