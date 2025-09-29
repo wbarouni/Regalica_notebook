@@ -105,28 +105,46 @@ async def rerank_candidates(request: RerankRequest):
     if not request.candidates:
         raise HTTPException(status_code=400, detail="Liste de candidats vide")
     
-    if len(request.candidates) > 200:
-        raise HTTPException(status_code=400, detail="Trop de candidats (max 200)")
+    if len(request.candidates) > 64:
+        raise HTTPException(status_code=400, detail="Trop de candidats (max 64)")
+    
+    # Rejeter les candidats vides
+    valid_candidates = []
+    valid_indices = []
+    for i, candidate in enumerate(request.candidates):
+        if candidate and candidate.strip():
+            valid_candidates.append(candidate.strip())
+            valid_indices.append(i)
+    
+    if not valid_candidates:
+        raise HTTPException(status_code=400, detail="Aucun candidat valide")
     
     try:
         start_time = time.time()
         
         # Préparer les paires (query, candidate) pour le cross-encoder
-        pairs = [(request.query, candidate) for candidate in request.candidates]
+        pairs = [(request.query, candidate) for candidate in valid_candidates]
         
-        # Calculer les scores de pertinence
+        # Calculer les scores de pertinence en batch
         raw_scores = model.predict(pairs)
         
         # Normaliser les scores entre 0 et 1 en utilisant la fonction sigmoid
         normalized_scores = [float(1 / (1 + np.exp(-score))) for score in raw_scores]
         
+        # Reconstituer les scores pour tous les candidats originaux (0 pour les vides)
+        full_scores = [0.0] * len(request.candidates)
+        for i, valid_idx in enumerate(valid_indices):
+            full_scores[valid_idx] = normalized_scores[i]
+        
         processing_time = int((time.time() - start_time) * 1000)
         
-        logger.info(f"Reranking terminé: {len(request.candidates)} candidats en {processing_time}ms")
+        # Logs de temps par lot
+        avg_time_per_candidate = processing_time / len(valid_candidates) if valid_candidates else 0
+        logger.info(f"Reranking terminé: {len(valid_candidates)}/{len(request.candidates)} candidats valides en {processing_time}ms ({avg_time_per_candidate:.1f}ms/candidat)")
         logger.debug(f"Scores: min={min(normalized_scores):.4f}, max={max(normalized_scores):.4f}, avg={np.mean(normalized_scores):.4f}")
         
         return RerankResponse(
-            scores=normalized_scores,
+            scores=full_scores,
             processing_time_ms=processing_time,
             model=RERANKER_MODEL_NAME
         )

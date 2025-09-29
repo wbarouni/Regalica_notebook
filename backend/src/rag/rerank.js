@@ -28,10 +28,13 @@ async function rerank(query, candidates) {
   try {
     logger.info(`[rag/rerank] Réordonnancement de ${candidates.length} candidats`);
 
-    // Préparer les textes des candidats pour le reranker
+    // Préparer les textes des candidats pour le reranker avec normalisation
     const candidateTexts = candidates.map(candidate => {
-      // Utiliser le texte du chunk, en tronquant si nécessaire
+      // Utiliser le texte du chunk
       let text = candidate.text || '';
+      
+      // Normaliser le texte : trim et collapse whitespace
+      text = text.trim().replace(/\s+/g, ' ');
       
       // Ajouter le contexte du document si disponible
       if (candidate.document_title) {
@@ -43,8 +46,8 @@ async function rerank(query, candidates) {
         text = `${candidate.heading_path}: ${text}`;
       }
       
-      // Tronquer à 512 caractères pour éviter les limites du modèle
-      return text.substring(0, 512);
+      // Tronquer à RERANKER_MAX_INPUT_CHARS sans couper au milieu d'une citation
+      return truncatePreservingCitations(text, config.rerankerMaxInputChars);
     });
 
     // Appel au microservice reranker
@@ -61,9 +64,9 @@ async function rerank(query, candidates) {
       throw new Error(`Réponse reranker invalide: ${scores?.length} scores pour ${candidates.length} candidats`);
     }
 
-    // Combiner les scores cosinus et rerank avec pondération
-    const alpha = 0.3; // Poids du score cosinus
-    const beta = 0.7;  // Poids du score rerank
+    // Combiner les scores cosinus et rerank avec pondération configurables
+    const alpha = config.rerankerAlpha; // Poids du score cosinus
+    const beta = config.rerankerBeta;   // Poids du score rerank
     
     const rerankedCandidates = candidates.map((candidate, index) => ({
       ...candidate,
@@ -128,7 +131,52 @@ function selectTopCandidates(rerankedCandidates, topN = 8) {
   return selected;
 }
 
+/**
+ * Tronque un texte à une longueur donnée sans couper au milieu d'une citation
+ * @param {string} text - Texte à tronquer
+ * @param {number} maxChars - Nombre maximum de caractères
+ * @returns {string} - Texte tronqué
+ */
+function truncatePreservingCitations(text, maxChars) {
+  if (!text || text.length <= maxChars) {
+    return text;
+  }
+
+  // Trouver la position de troncature
+  let truncatePos = maxChars;
+  
+  // Vérifier s'il y a une citation en cours à la position de troncature
+  const beforeTruncate = text.substring(0, truncatePos);
+  const afterTruncate = text.substring(truncatePos);
+  
+  // Pattern pour détecter les citations [title#page:x-y]
+  const citationPattern = /\[[^\]]*#[^\]]*:[^\]]*\]/g;
+  
+  // Vérifier si on coupe au milieu d'une citation
+  const lastOpenBracket = beforeTruncate.lastIndexOf('[');
+  const lastCloseBracket = beforeTruncate.lastIndexOf(']');
+  
+  if (lastOpenBracket > lastCloseBracket) {
+    // On est au milieu d'une citation, trouver la fin de la citation
+    const nextCloseBracket = afterTruncate.indexOf(']');
+    if (nextCloseBracket !== -1 && nextCloseBracket < 50) { // Limite raisonnable
+      truncatePos = maxChars + nextCloseBracket + 1;
+    } else {
+      // Citation trop longue, tronquer avant le début de la citation
+      truncatePos = lastOpenBracket;
+    }
+  }
+  
+  // S'assurer qu'on ne dépasse pas trop la limite
+  if (truncatePos > maxChars + 50) {
+    truncatePos = maxChars;
+  }
+  
+  return text.substring(0, truncatePos);
+}
+
 module.exports = {
   rerank,
-  selectTopCandidates
+  selectTopCandidates,
+  truncatePreservingCitations
 };
