@@ -1,0 +1,9 @@
+Title: Test Document
+
+This is a simple test document for DOCX format testing.
+
+Section 1: Overview
+This document contains multiple sections to test the chunking and embedding functionality.
+
+Section 2: Content
+The content includes various formatting elements and text structures to validate the extraction process.

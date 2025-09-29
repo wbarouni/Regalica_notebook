@@ -91,3 +91,41 @@ Ce projet utilise une intégration continue (CI) avec GitHub Actions pour garant
 
 Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
 
+
+
+
+## Bloc 2: Pipeline d'Ingestion
+
+### Variables d'Environnement
+
+Le Bloc 2 introduit une configuration complète via des variables d'environnement. Référez-vous au fichier `.env.example` pour la liste complète des variables requises.
+
+### Commandes
+
+-   **Lancer l'environnement Docker :**
+    ```bash
+    make up
+    ```
+
+-   **Appliquer les migrations de base de données :**
+    ```bash
+    ./scripts/migrate.sh up
+    ```
+
+-   **Lancer un benchmark d'ingestion :**
+    ```bash
+    ./scripts/bench_ingest.sh <path_to_file>
+    ```
+
+### Chemins d'API
+
+-   `POST /ingest/upload` : Uploader un document.
+-   `GET /ingest/:docId/chunks` : Récupérer les chunks d'un document.
+-   `GET /docs` : Lister les documents.
+
+### Codes d'Erreur
+
+-   `400 UNSUPPORTED_MIME` : Type de fichier non supporté.
+-   `400 NO_FILE` : Aucun fichier fourni.
+-   `500 INTERNAL_ERROR` : Erreur interne du serveur.
+

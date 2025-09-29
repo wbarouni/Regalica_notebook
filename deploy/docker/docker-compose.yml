@@ -8,7 +8,7 @@ volumes:
 
 services:
   postgres:
-    image: postgres:16
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: notebook
       POSTGRES_USER: postgres
@@ -55,20 +55,17 @@ services:
   backend:
     build: ../../backend
     environment:
-      PORT: 8080
-      CORS_ORIGIN: http://localhost:4200
-      # Database configuration
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: notebook
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      # Redis configuration
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      # Ollama configuration
-      OLLAMA_HOST: ollama
-      OLLAMA_PORT: 11434
+      SERVER_PORT: 8080
+      LOG_LEVEL: info
+      DB_URL: postgres://postgres:postgres@postgres:5432/notebook
+      DB_SCHEMA: nbk
+      MAX_UPLOAD_MB: 100
+      EMBED_MODEL: e5
+      EMBED_DIM: 1024
+      CHUNK_TOKENS_MAX: 1800
+      CHUNK_OVERLAP_PCT: 0.25
+      ALLOWED_MIME: application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/html,text/plain
+      OCR_ENABLE: false
     volumes:
       - uploads:/app/uploads
     healthcheck:
@@ -89,6 +86,10 @@ services:
 
   frontend:
     build: ../../frontend
+    environment:
+      NG_APP_API_BASE_URL: http://localhost:8080
+      NG_APP_MAX_UPLOAD_MB: 100
+      NG_APP_PAGE_SIZE: 20
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:80"]
       interval: 30s
