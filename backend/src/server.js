@@ -4,6 +4,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
+const morgan = require('morgan');
 
 const app = express();
 
@@ -52,6 +53,9 @@ app.use(cors({
   credentials: true
 }));
 
+// Logging middleware
+app.use(morgan('combined'));
+
 app.use(express.json());
 
 // Route de healthcheck obligatoire
@@ -70,9 +74,24 @@ app.get('/', (req, res) => {
 
 // Endpoint pour uploader des sources (PDF)
 app.post('/sources', upload.single('file'), (req, res) => {
+  const startTime = Date.now();
+  
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'Aucun fichier fourni' });
+      console.warn('[/sources] No file provided in request');
+      return res.status(400).json({ 
+        error: 'Aucun fichier fourni',
+        code: 'NO_FILE'
+      });
+    }
+
+    // Validation supplémentaire du fichier
+    if (req.file.size === 0) {
+      console.warn(`[/sources] Empty file uploaded: ${req.file.originalname}`);
+      return res.status(400).json({ 
+        error: 'Le fichier est vide',
+        code: 'EMPTY_FILE'
+      });
     }
 
     const sourceId = uuidv4();
@@ -82,62 +101,92 @@ app.post('/sources', upload.single('file'), (req, res) => {
       filepath: req.file.path,
       mimetype: req.file.mimetype,
       size: req.file.size,
-      uploaded_at: new Date().toISOString()
+      uploaded_at: new Date().toISOString(),
+      processing_status: 'uploaded'
     };
 
     // Stocker les métadonnées de la source
     sources.set(sourceId, sourceData);
 
-    console.log(`Source uploaded: ${sourceData.filename} (${sourceId})`);
+    const processingTime = Date.now() - startTime;
+    console.log(`[/sources] Source uploaded successfully: ${sourceData.filename} (${sourceId}) - ${processingTime}ms`);
 
     res.json({
       source_id: sourceId,
       filename: req.file.originalname,
       size: req.file.size,
-      status: 'uploaded'
+      status: 'uploaded',
+      processing_time_ms: processingTime
     });
 
   } catch (error) {
-    console.error('Error uploading source:', error);
-    res.status(500).json({ error: 'Erreur lors de l\'upload' });
+    const processingTime = Date.now() - startTime;
+    console.error(`[/sources] Error uploading source (${processingTime}ms):`, error);
+    res.status(500).json({ 
+      error: 'Erreur lors de l\'upload',
+      code: 'UPLOAD_ERROR'
+    });
   }
 });
 
 // Endpoint pour poser des questions sur les sources
 app.post('/chat/ask', (req, res) => {
+  const startTime = Date.now();
+  
   try {
     const { message, source_id } = req.body;
 
-    if (!message) {
-      return res.status(400).json({ error: 'Message requis' });
+    // Validation des paramètres
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      console.warn('[/chat/ask] Invalid or empty message provided');
+      return res.status(400).json({ 
+        error: 'Message requis et non vide',
+        code: 'INVALID_MESSAGE'
+      });
     }
 
-    if (!source_id) {
-      return res.status(400).json({ error: 'source_id requis' });
+    if (!source_id || typeof source_id !== 'string') {
+      console.warn('[/chat/ask] Invalid or missing source_id');
+      return res.status(400).json({ 
+        error: 'source_id requis et valide',
+        code: 'INVALID_SOURCE_ID'
+      });
     }
 
     // Vérifier que la source existe
     const source = sources.get(source_id);
     if (!source) {
-      return res.status(404).json({ error: 'Source non trouvée' });
+      console.warn(`[/chat/ask] Source not found: ${source_id}`);
+      return res.status(404).json({ 
+        error: 'Source non trouvée',
+        code: 'SOURCE_NOT_FOUND',
+        source_id: source_id
+      });
     }
 
     // Simulation d'une réponse basée sur le document
     // En production, ici on ferait appel à Ollama pour analyser le PDF
-    const simulatedAnswer = generateSimulatedAnswer(message, source);
+    const simulatedAnswer = generateSimulatedAnswer(message.trim(), source);
 
-    console.log(`Chat question: "${message}" for source ${source_id}`);
+    const processingTime = Date.now() - startTime;
+    console.log(`[/chat/ask] Question processed: "${message.substring(0, 50)}..." for source ${source_id} (${source.filename}) - ${processingTime}ms`);
 
     res.json({
       answer: simulatedAnswer,
       source_id: source_id,
-      message: message,
-      timestamp: new Date().toISOString()
+      message: message.trim(),
+      timestamp: new Date().toISOString(),
+      processing_time_ms: processingTime,
+      source_filename: source.filename
     });
 
   } catch (error) {
-    console.error('Error processing chat question:', error);
-    res.status(500).json({ error: 'Erreur lors du traitement de la question' });
+    const processingTime = Date.now() - startTime;
+    console.error(`[/chat/ask] Error processing chat question (${processingTime}ms):`, error);
+    res.status(500).json({ 
+      error: 'Erreur lors du traitement de la question',
+      code: 'PROCESSING_ERROR'
+    });
   }
 });
 
@@ -145,32 +194,60 @@ app.post('/chat/ask', (req, res) => {
 function generateSimulatedAnswer(message, source) {
   const lowerMessage = message.toLowerCase();
   
+  // Réponses spécialisées selon le type de question
   if (lowerMessage.includes('titre') || lowerMessage.includes('title')) {
-    return `Le document "${source.filename}" semble être un fichier PDF de test. Le titre exact nécessiterait une analyse plus approfondie du contenu.`;
+    return `Le document "${source.filename}" semble être un fichier PDF de test. Le titre exact nécessiterait une analyse plus approfondie du contenu avec Ollama.`;
   }
   
-  if (lowerMessage.includes('contenu') || lowerMessage.includes('content')) {
-    return `Ce document PDF contient du texte de test. Pour une analyse détaillée, l'intégration avec Ollama permettrait d'extraire et d'analyser le contenu complet.`;
+  if (lowerMessage.includes('contenu') || lowerMessage.includes('content') || lowerMessage.includes('résumé') || lowerMessage.includes('summary')) {
+    return `Ce document PDF (${Math.round(source.size / 1024)} KB) contient du texte de test. Pour une analyse détaillée du contenu, l'intégration avec Ollama permettrait d'extraire et d'analyser le texte complet.`;
   }
   
-  if (lowerMessage.includes('taille') || lowerMessage.includes('size')) {
-    return `Le document fait ${Math.round(source.size / 1024)} KB.`;
+  if (lowerMessage.includes('taille') || lowerMessage.includes('size') || lowerMessage.includes('poids')) {
+    return `Le document "${source.filename}" fait ${Math.round(source.size / 1024)} KB (${source.size} bytes). Il a été uploadé le ${new Date(source.uploaded_at).toLocaleString('fr-FR')}.`;
   }
   
-  // Réponse générique
-  return `J'ai reçu votre question "${message}" concernant le document "${source.filename}". En mode simulation, je peux confirmer que le document a été traité et est disponible pour analyse. L'intégration complète avec Ollama permettrait des réponses plus précises basées sur le contenu réel du PDF.`;
+  if (lowerMessage.includes('quand') || lowerMessage.includes('date') || lowerMessage.includes('upload')) {
+    return `Le document "${source.filename}" a été uploadé le ${new Date(source.uploaded_at).toLocaleString('fr-FR')} avec l'ID ${source.source_id}.`;
+  }
+  
+  if (lowerMessage.includes('type') || lowerMessage.includes('format') || lowerMessage.includes('mimetype')) {
+    return `Le document "${source.filename}" est de type ${source.mimetype}. Il s'agit d'un fichier PDF standard.`;
+  }
+  
+  if (lowerMessage.includes('aide') || lowerMessage.includes('help') || lowerMessage.includes('commandes')) {
+    return `Je peux répondre à des questions sur le titre, le contenu, la taille, la date d'upload, ou le type du document "${source.filename}". En mode production, Ollama analyserait le contenu réel du PDF.`;
+  }
+  
+  // Réponse générique améliorée
+  return `J'ai reçu votre question "${message}" concernant le document "${source.filename}" (${Math.round(source.size / 1024)} KB). En mode simulation, je peux confirmer que le document a été traité et est disponible pour analyse. L'intégration complète avec Ollama permettrait des réponses plus précises basées sur le contenu réel du PDF. Essayez de demander le titre, le contenu, la taille ou la date d'upload.`;
 }
 
 // Endpoint pour lister les sources
 app.get('/sources', (req, res) => {
-  const sourcesList = Array.from(sources.values()).map(source => ({
-    source_id: source.source_id,
-    filename: source.filename,
-    size: source.size,
-    uploaded_at: source.uploaded_at
-  }));
-  
-  res.json({ sources: sourcesList });
+  try {
+    const sourcesList = Array.from(sources.values()).map(source => ({
+      source_id: source.source_id,
+      filename: source.filename,
+      size: source.size,
+      uploaded_at: source.uploaded_at,
+      processing_status: source.processing_status || 'uploaded'
+    }));
+    
+    console.log(`[/sources] Listed ${sourcesList.length} sources`);
+    
+    res.json({ 
+      sources: sourcesList,
+      total_count: sourcesList.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[/sources] Error listing sources:', error);
+    res.status(500).json({ 
+      error: 'Erreur lors de la récupération des sources',
+      code: 'LIST_ERROR'
+    });
+  }
 });
 
 // Gestion des erreurs multer
