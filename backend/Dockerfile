@@ -15,4 +15,4 @@ COPY . .
 EXPOSE 8080
 
 # Démarrer l'application
-CMD ["npm", "start"]
+CMD ["node", "src/server.js"]

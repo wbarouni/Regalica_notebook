@@ -4,8 +4,8 @@
   "description": "Backend Express JS pour Regalica Notebook",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
