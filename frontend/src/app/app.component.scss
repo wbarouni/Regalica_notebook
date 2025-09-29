@@ -1,7 +1,76 @@
+// Styles spécifiques pour les 3 panneaux
+// Tailwind CSS gère la plupart du styling via les classes utilitaires
+
 :host {
   display: block;
 }
 
-.container {
-  max-width: 1200px;
+// Ajustements pour la hauteur de l'écran
+main {
+  height: calc(100vh - 4rem); // Soustraire la hauteur du header
+}
+
+// Styles pour les panneaux
+.sources-panel,
+.chat-panel,
+.viewer-panel {
+  min-height: 0; // Permet le scroll dans les flex containers
+}
+
+// Amélioration du scroll
+.overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db #f9fafb;
+}
+
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: #f9fafb;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+// Animation pour les messages de chat
+.chat-message {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Focus states améliorés
+input:focus,
+button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+// Hover states pour les éléments interactifs
+.source-item:hover {
+  transform: translateY(-1px);
+  transition: transform 0.2s ease;
+}
+
+// États de chargement
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
 }
