@@ -18,6 +18,7 @@
     "html-to-text": "^9.0.5",
     "langs": "^2.0.0",
     "mammoth": "^1.6.0",
+    "minhash": "^0.0.9",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "pdf-parse": "^1.1.1",

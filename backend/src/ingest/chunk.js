@@ -111,47 +111,42 @@ const splitByStructure = (text, heading_path, span_start, span_end) => {
 const deduplicateChunks = (chunks, jaccardThreshold = 0.9) => {
   if (chunks.length <= 1) return chunks;
   
+  const { Minhash } = require('minhash');
   const deduplicated = [];
-  const seen = new Set();
+  const seenHashes = [];
   
   for (const chunk of chunks) {
-    const signature = generateMinHashSignature(chunk.text);
+    const minHash = new Minhash();
+    const shingles = generateShingles(chunk.text, 3);
+    
+    // Ajouter les shingles au MinHash
+    for (const shingle of shingles) {
+      minHash.update(shingle);
+    }
+    
     let isDuplicate = false;
     
     // Vérifier la similarité avec les chunks déjà vus
-    for (const seenSig of seen) {
-      const jaccard = calculateJaccardSimilarity(signature, seenSig);
+    for (const seenHash of seenHashes) {
+      const jaccard = minHash.jaccard(seenHash);
       if (jaccard >= jaccardThreshold) {
         isDuplicate = true;
+        logger.debug(`Duplicate chunk detected: Jaccard=${jaccard.toFixed(3)} >= ${jaccardThreshold}`);
         break;
       }
     }
     
     if (!isDuplicate) {
       deduplicated.push(chunk);
-      seen.add(signature);
+      seenHashes.push(minHash);
     }
   }
   
+  logger.debug(`Deduplication: ${chunks.length} -> ${deduplicated.length} chunks (threshold=${jaccardThreshold})`);
   return deduplicated;
 };
 
-/**
- * Génère une signature MinHash pour un texte
- * @param {string} text - Texte à analyser
- * @returns {Set} Signature MinHash (ensemble de hashes)
- */
-const generateMinHashSignature = (text) => {
-  const shingles = generateShingles(text, 3); // 3-grams
-  const hashes = new Set();
-  
-  for (const shingle of shingles) {
-    const hash = crypto.createHash('md5').update(shingle).digest('hex').substring(0, 8);
-    hashes.add(hash);
-  }
-  
-  return hashes;
-};
+
 
 /**
  * Génère des shingles (n-grams) à partir d'un texte
@@ -171,17 +166,6 @@ const generateShingles = (text, n = 3) => {
   return shingles;
 };
 
-/**
- * Calcule la similarité Jaccard entre deux signatures
- * @param {Set} sig1 - Première signature
- * @param {Set} sig2 - Deuxième signature
- * @returns {number} Coefficient Jaccard (0-1)
- */
-const calculateJaccardSimilarity = (sig1, sig2) => {
-  const intersection = new Set([...sig1].filter(x => sig2.has(x)));
-  const union = new Set([...sig1, ...sig2]);
-  
-  return union.size === 0 ? 0 : intersection.size / union.size;
-};
+
 
 module.exports = { chunkSections };

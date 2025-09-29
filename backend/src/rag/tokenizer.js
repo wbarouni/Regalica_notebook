@@ -37,7 +37,7 @@ function estimateTokens(text) {
 }
 
 /**
- * Divise un texte en segments de taille approximative en tokens
+ * Divise un texte en segments avec sliding window précis par tokens
  * @param {string} text - Texte à diviser
  * @param {number} maxTokens - Nombre maximum de tokens par segment
  * @param {number} overlapTokens - Nombre de tokens de chevauchement
@@ -48,50 +48,97 @@ function splitByTokens(text, maxTokens = 800, overlapTokens = 200) {
     return [];
   }
 
-  const totalTokens = estimateTokens(text);
+  const cleanText = text.trim();
+  if (!cleanText) {
+    return [];
+  }
+
+  const totalTokens = estimateTokens(cleanText);
   if (totalTokens <= maxTokens) {
     return [{
-      text: text.trim(),
+      text: cleanText,
       tokens: totalTokens,
       start: 0,
-      end: text.length
+      end: cleanText.length
     }];
   }
 
+  // Validation des paramètres
+  if (overlapTokens >= maxTokens) {
+    throw new Error('overlapTokens must be less than maxTokens');
+  }
+
   const segments = [];
-  const sentences = splitIntoSentences(text);
+  const sentences = splitIntoSentences(cleanText);
   
   let currentSegment = '';
   let currentTokens = 0;
-  let segmentStart = 0;
+  let currentStart = 0;
+  let sentenceIndex = 0;
   
-  for (let i = 0; i < sentences.length; i++) {
-    const sentence = sentences[i];
+  while (sentenceIndex < sentences.length) {
+    const sentence = sentences[sentenceIndex];
     const sentenceTokens = estimateTokens(sentence);
     
+    // Si la phrase seule dépasse maxTokens, la découper par mots
+    if (sentenceTokens > maxTokens) {
+      // Traiter les segments précédents s'ils existent
+      if (currentSegment.trim()) {
+        segments.push({
+          text: currentSegment.trim(),
+          tokens: currentTokens,
+          start: currentStart,
+          end: currentStart + currentSegment.length
+        });
+      }
+      
+      // Découper la phrase longue par mots
+      const wordSegments = splitLongSentenceByWords(sentence, maxTokens, overlapTokens);
+      for (const wordSegment of wordSegments) {
+        segments.push({
+          text: wordSegment.text,
+          tokens: wordSegment.tokens,
+          start: currentStart + wordSegment.start,
+          end: currentStart + wordSegment.end
+        });
+      }
+      
+      // Réinitialiser pour la suite
+      currentSegment = '';
+      currentTokens = 0;
+      currentStart = currentStart + sentence.length + 1; // +1 pour l'espace
+      sentenceIndex++;
+      continue;
+    }
+    
     // Si ajouter cette phrase dépasse la limite
-    if (currentTokens + sentenceTokens > maxTokens && currentSegment) {
+    if (currentTokens + sentenceTokens > maxTokens && currentSegment.trim()) {
       // Créer le segment actuel
       segments.push({
         text: currentSegment.trim(),
         tokens: currentTokens,
-        start: segmentStart,
-        end: segmentStart + currentSegment.length
+        start: currentStart,
+        end: currentStart + currentSegment.length
       });
       
       // Calculer l'overlap pour le prochain segment
-      const overlapText = getLastTokensText(currentSegment, overlapTokens);
-      const overlapLength = overlapText.length;
+      const overlapInfo = calculateOverlap(currentSegment, overlapTokens);
       
       // Commencer le nouveau segment avec l'overlap
-      currentSegment = overlapText + (overlapText ? ' ' : '') + sentence;
+      currentSegment = overlapInfo.text + (overlapInfo.text ? ' ' : '') + sentence;
       currentTokens = estimateTokens(currentSegment);
-      segmentStart = segmentStart + currentSegment.length - overlapLength - sentence.length - 1;
+      currentStart = currentStart + currentSegment.length - overlapInfo.text.length - sentence.length - (overlapInfo.text ? 1 : 0);
     } else {
       // Ajouter la phrase au segment actuel
-      currentSegment += (currentSegment ? ' ' : '') + sentence;
-      currentTokens += sentenceTokens;
+      if (currentSegment) {
+        currentSegment += ' ' + sentence;
+      } else {
+        currentSegment = sentence;
+      }
+      currentTokens = estimateTokens(currentSegment);
     }
+    
+    sentenceIndex++;
   }
   
   // Ajouter le dernier segment s'il existe
@@ -99,12 +146,107 @@ function splitByTokens(text, maxTokens = 800, overlapTokens = 200) {
     segments.push({
       text: currentSegment.trim(),
       tokens: currentTokens,
-      start: segmentStart,
-      end: segmentStart + currentSegment.length
+      start: currentStart,
+      end: currentStart + currentSegment.length
     });
   }
   
   return segments;
+}
+
+/**
+ * Découpe une phrase trop longue par mots avec overlap
+ * @param {string} sentence - Phrase à découper
+ * @param {number} maxTokens - Tokens maximum par segment
+ * @param {number} overlapTokens - Tokens d'overlap
+ * @returns {Array} - Segments de mots
+ */
+function splitLongSentenceByWords(sentence, maxTokens, overlapTokens) {
+  const words = sentence.split(/\s+/);
+  const segments = [];
+  
+  let currentWords = [];
+  let currentTokens = 0;
+  let wordIndex = 0;
+  
+  while (wordIndex < words.length) {
+    const word = words[wordIndex];
+    const wordTokens = estimateTokens(word);
+    
+    if (currentTokens + wordTokens > maxTokens && currentWords.length > 0) {
+      // Créer le segment actuel
+      const segmentText = currentWords.join(' ');
+      segments.push({
+        text: segmentText,
+        tokens: currentTokens,
+        start: 0, // Position relative, sera ajustée par l'appelant
+        end: segmentText.length
+      });
+      
+      // Calculer l'overlap en mots
+      const overlapWordCount = Math.floor(overlapTokens / 4); // Approximation
+      const overlapWords = currentWords.slice(-Math.min(overlapWordCount, currentWords.length));
+      
+      // Commencer le nouveau segment avec l'overlap
+      currentWords = [...overlapWords, word];
+      currentTokens = estimateTokens(currentWords.join(' '));
+    } else {
+      currentWords.push(word);
+      currentTokens += wordTokens;
+    }
+    
+    wordIndex++;
+  }
+  
+  // Ajouter le dernier segment
+  if (currentWords.length > 0) {
+    const segmentText = currentWords.join(' ');
+    segments.push({
+      text: segmentText,
+      tokens: currentTokens,
+      start: 0,
+      end: segmentText.length
+    });
+  }
+  
+  return segments;
+}
+
+/**
+ * Calcule l'overlap optimal pour un segment
+ * @param {string} segment - Segment source
+ * @param {number} overlapTokens - Tokens d'overlap souhaités
+ * @returns {Object} - {text: string, tokens: number}
+ */
+function calculateOverlap(segment, overlapTokens) {
+  if (overlapTokens <= 0 || !segment) {
+    return { text: '', tokens: 0 };
+  }
+  
+  const sentences = splitIntoSentences(segment);
+  let overlapText = '';
+  let overlapTokenCount = 0;
+  
+  // Prendre les dernières phrases jusqu'à atteindre overlapTokens
+  for (let i = sentences.length - 1; i >= 0; i--) {
+    const sentence = sentences[i];
+    const sentenceTokens = estimateTokens(sentence);
+    
+    if (overlapTokenCount + sentenceTokens <= overlapTokens) {
+      overlapText = sentence + (overlapText ? ' ' + overlapText : '');
+      overlapTokenCount += sentenceTokens;
+    } else {
+      break;
+    }
+  }
+  
+  // Si pas assez de phrases complètes, prendre les derniers mots
+  if (overlapTokenCount < overlapTokens * 0.5) {
+    overlapText = getLastTokensText(segment, overlapTokens);
+    overlapTokenCount = estimateTokens(overlapText);
+  }
+  
+  return { text: overlapText, tokens: overlapTokenCount };
 }
 
 /**
