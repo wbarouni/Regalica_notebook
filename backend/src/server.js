@@ -24,6 +24,10 @@ app.use("/ingest", ingestRoutes);
 // Route pour lister les documents (alias pour compatibilité)
 app.use("/docs", ingestRoutes);
 
+// Routes RAG
+const ragRoutes = require("./rag/routes");
+app.use("/rag", ragRoutes);
+
 // Error handler
 app.use(errorHandler);
 

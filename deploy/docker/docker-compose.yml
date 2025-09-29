@@ -6,6 +6,7 @@ volumes:
   ollama_models:
   uploads:
   embedder_cache:
+  reranker_cache:
 
 services:
   postgres:
@@ -62,11 +63,27 @@ services:
     volumes:
       - embedder_cache:/root/.cache
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      test: ["CMD", "python", "-c", "import requests; requests.get(\'http://localhost:8000/health\')"]
       interval: 30s
       timeout: 10s
       retries: 10
       start_period: 120s
+    restart: unless-stopped
+
+  reranker:
+    build: ../../reranker
+    environment:
+      RERANKER_MODEL_NAME: ${RERANKER_MODEL_NAME:-BAAI/bge-reranker-v2-m3}
+      HOST: 0.0.0.0
+      PORT: 8001
+    volumes:
+      - reranker_cache:/root/.cache
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get(\'http://localhost:8001/health\')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
     restart: unless-stopped
 
   backend:
@@ -100,6 +117,8 @@ services:
       ollama:
         condition: service_healthy
       embedder:
+        condition: service_healthy
+      reranker:
         condition: service_healthy
     restart: unless-stopped
 

@@ -2,14 +2,16 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { SourcesComponent } from './sources/sources.component';
+import { ChatComponent } from './chat/chat.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, SourcesComponent],
+  imports: [CommonModule, RouterOutlet, SourcesComponent, ChatComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
   title = 'Regalica Notebook JS';
+  activeTab: 'sources' | 'chat' = 'sources';
 }

@@ -17,6 +17,16 @@ const config = {
   chunkOverlapPct: parseFloat(process.env.CHUNK_OVERLAP_PCT) || 0.25,
   allowedMime: (process.env.ALLOWED_MIME || "application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/html,text/plain").split(","),
   ocrEnable: process.env.OCR_ENABLE === "true",
+
+  // RAG Configuration
+  ragTopK: parseInt(process.env.RAG_TOP_K) || 50,
+  ragCitationsMin: parseInt(process.env.RAG_CITATIONS_MIN) || 2,
+  ragConfidenceThreshold: parseFloat(process.env.RAG_CONFIDENCE_THRESHOLD) || 0.6,
+
+  // Microservices
+  rerankerApiUrl: process.env.RERANKER_API_URL || 'http://reranker:8000',
+  llmApiUrl: process.env.LLM_API_URL || 'http://ollama:11434',
+  llmModelName: process.env.LLM_MODEL_NAME || 'qwen2:7b-instruct',
 };
 
 // Validation

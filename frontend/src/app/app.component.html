@@ -9,15 +9,44 @@
         <h1 class="text-xl font-semibold text-black" data-testid="app-title">{{ title }}</h1>
       </div>
       <div class="flex items-center space-x-4">
+        <!-- Navigation Tabs -->
+        <div class="flex space-x-1">
+          <button 
+            (click)="activeTab = 'sources'"
+            [class]="activeTab === 'sources' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-900'"
+            class="px-3 py-2 rounded-md text-sm font-medium transition-colors"
+            data-testid="sources-tab">
+            Sources
+          </button>
+          <button 
+            (click)="activeTab = 'chat'"
+            [class]="activeTab === 'chat' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-900'"
+            class="px-3 py-2 rounded-md text-sm font-medium transition-colors"
+            data-testid="chat-tab">
+            Chat
+          </button>
+        </div>
         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800" data-testid="version-badge">
-          v0.2.0 - Bloc 2
+          v0.3.0 - Bloc 3
         </span>
       </div>
     </div>
   </div>
 </header>
 
-<!-- Module Sources -->
-<app-sources data-testid="sources-module"></app-sources>
+<!-- Main Content -->
+<main class="flex-1 flex overflow-hidden" data-testid="main-content">
+  
+  <!-- Sources Panel -->
+  <div *ngIf="activeTab === 'sources'" class="w-full">
+    <app-sources data-testid="sources-module"></app-sources>
+  </div>
+
+  <!-- Chat Panel -->
+  <div *ngIf="activeTab === 'chat'" class="w-full h-full">
+    <app-chat data-testid="chat-module"></app-chat>
+  </div>
+
+</main>
 
 <router-outlet></router-outlet>

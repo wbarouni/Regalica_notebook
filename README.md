@@ -94,6 +94,14 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
 
 
 
+## Bloc 3 : Pipeline RAG Avancée
+
+Le Bloc 3 implémente une pipeline RAG (Retrieval-Augmented Generation) complète avec les fonctionnalités suivantes :
+- **Microservice Reranker** : Un microservice Python basé sur FastAPI et le modèle `BGE-reranker-v2-m3` pour réordonner les candidats.
+- **Génération de Réponse** : Utilisation d'Ollama avec le modèle `qwen2:7b-instruct` pour générer des réponses avec citations obligatoires.
+- **Détection de Langue** : Détection automatique de la langue de la requête (fr, en, ar).
+- **Interface Chat** : Une interface utilisateur Angular complète avec affichage des citations, score de confiance et temps de traitement.
+
 ## Bloc 2: Pipeline d'Ingestion
 
 ### Variables d'Environnement
