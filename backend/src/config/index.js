@@ -32,6 +32,11 @@ const config = {
   rerankerApiUrl: process.env.RERANKER_API_URL || 'http://reranker:8000',
   llmApiUrl: process.env.LLM_API_URL || 'http://ollama:11434',
   llmModelName: process.env.LLM_MODEL_NAME || 'qwen2:7b-instruct',
+
+  // URL Configuration
+  backendExternalUrl: process.env.BACKEND_EXTERNAL_URL || '',
+  frontendExternalUrl: process.env.FRONTEND_EXTERNAL_URL || '',
+  corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:4200',
 };
 
 // Validation
