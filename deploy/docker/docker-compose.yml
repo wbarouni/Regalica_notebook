@@ -1,95 +1,42 @@
-version: '3.8'
-
+version: "3.8"
 services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_DB: regalica
-      POSTGRES_USER: regalica
-      POSTGRES_PASSWORD: regalica
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./initdb:/docker-entrypoint-initdb.d
+      POSTGRES_DB: notebook
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U regalica -d regalica"]
-      interval: 10s
+      test: ["CMD-SHELL","pg_isready -U postgres -d notebook"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 30
+    ports: ["5432:5432"]
 
   redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    image: redis:7-alpine
+    ports: ["6379:6379"]
 
   ollama:
     image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
+    ports: ["11434:11434"]
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      test: ["CMD","curl","-fsS","http://localhost:11434/api/version"]
+      interval: 5s
+      timeout: 5s
+      retries: 120
 
   backend:
-    build:
-      context: ../../backend
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
+    build: ../../backend
     environment:
-      - PORT_BACKEND=8080
-      - CORS_ORIGIN=http://localhost:4200
-      - PGHOST=postgres
-      - PGPORT=5432
-      - PGDATABASE=regalica
-      - PGUSER=regalica
-      - PGPASSWORD=regalica
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - OLLAMA_HOST=ollama
-      - OLLAMA_PORT=11434
-      - DEFAULT_LLM=qwen2:7b-instruct
+      PORT: 8080
+    ports: ["8080:8080"]
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      ollama:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8080/health/ready"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      postgres: { condition: service_healthy }
+      redis: { condition: service_started }
+      ollama: { condition: service_healthy }
 
   frontend:
-    build:
-      context: ../../frontend
-      dockerfile: Dockerfile
-    ports:
-      - "4200:4200"
-    depends_on:
-      backend:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:4200/"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  postgres_data:
-  redis_data:
-  ollama_data:
+    build: ../../frontend
+    ports: ["4200:80"]
+    depends_on: [ backend ]
