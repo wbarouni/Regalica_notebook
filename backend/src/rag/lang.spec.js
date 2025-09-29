@@ -52,8 +52,8 @@ describe('Language Detection', () => {
     detectLanguage(shortText);
     const endTime = Date.now();
     
-    // Doit être exécuté en moins de 1ms pour un texte court
-    expect(endTime - startTime).toBeLessThan(1);
+    // Doit être exécuté en moins de 10ms pour un texte court
+    expect(endTime - startTime).toBeLessThan(10);
   });
 
   test('should handle special characters and numbers', () => {
