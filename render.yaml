@@ -47,7 +47,7 @@ services:
     runtime: static
     plan: free
     rootDir: ./frontend
-    buildCommand: npm install --legacy-peer-deps && npm run build -- --configuration=production
+    buildCommand: npm ci --legacy-peer-deps && npm run build -- --configuration=production
     staticPublishPath: ./dist/regalica-frontend/browser
     envVars:
       - key: NODE_ENV
