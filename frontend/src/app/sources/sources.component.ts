@@ -142,7 +142,7 @@ import { UploadComponent } from './upload.component';
                    data-testid="pagination">
                 <div class="text-sm text-gray-700">
                   Affichage {{ (pagination.page - 1) * pagination.pageSize + 1 }} à 
-                  {{ Math.min(pagination.page * pagination.pageSize, pagination.total) }} 
+                  {{ getDisplayedCount() }} 
                   sur {{ pagination.total }} résultats
                 </div>
                 <div class="flex space-x-2">
@@ -366,5 +366,9 @@ export class SourcesComponent implements OnInit {
 
   formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString('fr-FR');
+  }
+
+  getDisplayedCount(): number {
+    return Math.min(this.pagination.page * this.pagination.pageSize, this.pagination.total);
   }
 }
