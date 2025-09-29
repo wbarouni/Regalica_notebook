@@ -1,19 +1,19 @@
-// Variables CSS pour les thèmes
+// Variables CSS minimalistes noir et blanc
 :root {
   // Couleurs Light Theme
   --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f8fafc;
-  --color-bg-tertiary: #f1f5f9;
-  --color-text-primary: #1e293b;
-  --color-text-secondary: #64748b;
-  --color-text-tertiary: #94a3b8;
-  --color-border: #e2e8f0;
-  --color-border-hover: #cbd5e1;
-  --color-accent: #3b82f6;
-  --color-accent-hover: #2563eb;
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
+  --color-bg-secondary: #f9fafb;
+  --color-bg-tertiary: #f3f4f6;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-tertiary: #9ca3af;
+  --color-border: #e5e7eb;
+  --color-border-hover: #d1d5db;
+  --color-accent: #111827;
+  --color-accent-hover: #374151;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
   
   // Ombres
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -36,16 +36,16 @@
 
 // Dark Theme
 [data-theme="dark"] {
-  --color-bg-primary: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-bg-tertiary: #334155;
-  --color-text-primary: #f8fafc;
-  --color-text-secondary: #cbd5e1;
-  --color-text-tertiary: #94a3b8;
-  --color-border: #334155;
-  --color-border-hover: #475569;
-  --color-accent: #60a5fa;
-  --color-accent-hover: #3b82f6;
+  --color-bg-primary: #111827;
+  --color-bg-secondary: #1f2937;
+  --color-bg-tertiary: #374151;
+  --color-text-primary: #f9fafb;
+  --color-text-secondary: #d1d5db;
+  --color-text-tertiary: #9ca3af;
+  --color-border: #374151;
+  --color-border-hover: #4b5563;
+  --color-accent: #f9fafb;
+  --color-accent-hover: #e5e7eb;
   
   // Ombres adaptées au dark mode
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
