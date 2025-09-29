@@ -1,8 +1,3 @@
-# Workflow CI - Version finale
-
-## Fichier créé : `.github/workflows/ci.yml`
-
-```yaml
 name: CI
 on:
   pull_request: { branches: ["main"] }
@@ -21,17 +16,3 @@ jobs:
           for i in {1..40}; do curl -fsS http://localhost:8080/health/ready && break; sleep 2; [[ $i -eq 40 ]] && exit 1; done
       - name: Smoke
         run: bash scripts/smoke.sh
-```
-
-## Instructions
-
-1. Aller sur GitHub dans l'onglet "Actions"
-2. Créer un nouveau workflow
-3. Copier le contenu ci-dessus
-4. Sauvegarder le fichier
-
-Le workflow testera automatiquement :
-- Installation des dépendances
-- Build et démarrage des services Docker
-- Healthcheck du backend
-- Smoke test complet
