@@ -9,8 +9,23 @@ const morgan = require('morgan');
 const app = express();
 
 // Configuration depuis les variables d'environnement
-const PORT = process.env.PORT_BACKEND || 8080;
+const PORT = process.env.PORT || 8080;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:4200';
+
+// Configuration base de données
+const POSTGRES_HOST = process.env.POSTGRES_HOST || 'localhost';
+const POSTGRES_PORT = process.env.POSTGRES_PORT || 5432;
+const POSTGRES_DB = process.env.POSTGRES_DB || 'notebook';
+const POSTGRES_USER = process.env.POSTGRES_USER || 'postgres';
+const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD || 'postgres';
+
+// Configuration Redis
+const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
+const REDIS_PORT = process.env.REDIS_PORT || 6379;
+
+// Configuration Ollama
+const OLLAMA_HOST = process.env.OLLAMA_HOST || 'localhost';
+const OLLAMA_PORT = process.env.OLLAMA_PORT || 11434;
 
 // Créer le dossier uploads s'il n'existe pas
 const uploadsDir = path.join(__dirname, '../uploads');
@@ -271,4 +286,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Backend server running on port ${PORT}`);
   console.log(`CORS origin: ${CORS_ORIGIN}`);
   console.log(`Uploads directory: ${uploadsDir}`);
+  console.log(`Database: ${POSTGRES_USER}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}`);
+  console.log(`Redis: ${REDIS_HOST}:${REDIS_PORT}`);
+  console.log(`Ollama: ${OLLAMA_HOST}:${OLLAMA_PORT}`);
 });

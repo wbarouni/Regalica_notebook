@@ -1,4 +1,11 @@
 version: "3.8"
+
+volumes:
+  pg_data:
+  redis_data:
+  ollama_models:
+  uploads:
+
 services:
   postgres:
     image: postgres:16
@@ -6,37 +13,90 @@ services:
       POSTGRES_DB: notebook
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL","pg_isready -U postgres -d notebook"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d notebook"]
       interval: 5s
       timeout: 5s
       retries: 30
+      start_period: 10s
     ports: ["5432:5432"]
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
     ports: ["6379:6379"]
+    restart: unless-stopped
 
   ollama:
     image: ollama/ollama:latest
-    ports: ["11434:11434"]
+    volumes:
+      - ollama_models:/root/.ollama
     healthcheck:
-      test: ["CMD","curl","-fsS","http://localhost:11434/api/version"]
-      interval: 5s
+      test: ["CMD", "curl", "-fsS", "http://localhost:11434/api/version"]
+      interval: 10s
       timeout: 5s
       retries: 120
+      start_period: 30s
+    ports: ["11434:11434"]
+    restart: unless-stopped
 
   backend:
     build: ../../backend
     environment:
       PORT: 8080
+      CORS_ORIGIN: http://localhost:4200
+      # Database configuration
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: notebook
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      # Redis configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # Ollama configuration
+      OLLAMA_HOST: ollama
+      OLLAMA_PORT: 11434
+    volumes:
+      - uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
     ports: ["8080:8080"]
     depends_on:
-      postgres: { condition: service_healthy }
-      redis: { condition: service_started }
-      ollama: { condition: service_healthy }
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
 
   frontend:
     build: ../../frontend
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:80"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     ports: ["4200:80"]
-    depends_on: [ backend ]
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
