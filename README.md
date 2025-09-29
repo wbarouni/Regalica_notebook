@@ -158,3 +158,24 @@ EMBED_MODEL_NAME=nomic-ai/nomic-embed-text-v1.5
 - `POST /embed` : Génération d'embeddings
 
 Le microservice n'est pas exposé publiquement et n'est accessible qu'au backend via le réseau Docker interne.
+
+### Déploiement sur Render
+
+Le projet est configuré pour être déployé sur Render avec le fichier `render.yaml`. La configuration inclut :
+
+**Services déployés :**
+- **Backend Express.js** : API principale avec endpoint `/health/ready`
+- **Microservice Embedder** : Service Python pour la génération d'embeddings
+- **Frontend Angular** : Interface utilisateur statique
+- **Base de données PostgreSQL** : Stockage des données avec extensions vectorielles
+
+**Variables d'environnement requises :**
+- `EMBED_API_URL` : URL du microservice embedder
+- `EMBED_MODEL_NAME` : Nom du modèle d'embeddings
+- `RAG_TOP_K`, `RAG_CITATIONS_MIN`, `RAG_CONFIDENCE_THRESHOLD` : Configuration RAG
+- `RERANKER_API_URL`, `LLM_API_URL`, `LLM_MODEL_NAME` : URLs des microservices
+
+**Pour déployer :**
+1. Connectez votre repository GitHub à Render
+2. Les services se déploieront automatiquement selon la configuration
+3. L'application sera accessible via les URLs Render générées

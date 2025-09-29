@@ -7,15 +7,15 @@ services:
     name: regalica-backend
     runtime: node
     region: frankfurt
-    plan: free
+    plan: starter
     rootDir: ./backend
-    buildCommand: npm install
+    buildCommand: npm ci --legacy-peer-deps
     startCommand: npm start
-    healthCheckPath: /health
+    healthCheckPath: /health/ready
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
+      - key: SERVER_PORT
         value: 10000
       - key: LOG_LEVEL
         value: info
@@ -27,10 +27,10 @@ services:
         value: nbk
       - key: MAX_UPLOAD_MB
         value: 100
-      - key: EMBED_MODEL
-        value: e5
-      - key: EMBED_DIM
-        value: 1024
+      - key: EMBED_API_URL
+        value: http://embedder:8000
+      - key: EMBED_MODEL_NAME
+        value: intfloat/multilingual-e5-large
       - key: CHUNK_TOKENS_MAX
         value: 1800
       - key: CHUNK_OVERLAP_PCT
@@ -39,13 +39,39 @@ services:
         value: application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/html,text/plain
       - key: OCR_ENABLE
         value: false
+      - key: RAG_TOP_K
+        value: 50
+      - key: RAG_CITATIONS_MIN
+        value: 2
+      - key: RAG_CONFIDENCE_THRESHOLD
+        value: 0.6
+      - key: RERANKER_API_URL
+        value: http://reranker:8000
+      - key: LLM_API_URL
+        value: http://ollama:11434
+      - key: LLM_MODEL_NAME
+        value: qwen2:7b-instruct
+    autoDeploy: true
+
+  # Microservice Embedder
+  - type: web
+    name: regalica-embedder
+    runtime: python
+    region: frankfurt
+    plan: starter
+    rootDir: ./embedder
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port 8000
+    envVars:
+      - key: EMBED_MODEL_NAME
+        value: intfloat/multilingual-e5-large
+    healthCheckPath: /health
     autoDeploy: true
 
   # Frontend Angular
-  - type: web
+  - type: static
     name: regalica-frontend
-    runtime: static
-    plan: free
+    plan: starter
     rootDir: ./frontend
     buildCommand: npm ci --legacy-peer-deps && npm run build -- --configuration=production
     staticPublishPath: ./dist/regalica-frontend/browser
