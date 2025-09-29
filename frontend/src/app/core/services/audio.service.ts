@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export interface AudioState {
   isPlaying: boolean;
@@ -32,6 +33,11 @@ export class AudioService {
   });
 
   public audioState$ = this.audioStateSubject.asObservable();
+
+  // Observables séparés pour compatibilité avec Magic Studio
+  public isPlaying$ = this.audioState$.pipe(map(state => state.isPlaying));
+  public currentTime$ = this.audioState$.pipe(map(state => state.currentPosition));
+  public duration$ = this.audioState$.pipe(map(state => state.duration));
 
   private currentUtterance: SpeechSynthesisUtterance | null = null;
   private availableVoices: SpeechSynthesisVoice[] = [];
@@ -339,5 +345,23 @@ export class AudioService {
    */
   getAudioState(): AudioState {
     return this.audioStateSubject.value;
+  }
+
+  /**
+   * Modifie la vitesse de lecture en cours
+   */
+  setRate(rate: number): void {
+    if (this.currentUtterance && speechSynthesis.speaking) {
+      // Pour changer la vitesse, il faut redémarrer avec la nouvelle vitesse
+      const currentState = this.audioStateSubject.value;
+      if (currentState.isPlaying) {
+        const remainingText = this.textSegments.slice(this.currentSegmentIndex).join(' ');
+        speechSynthesis.cancel();
+        
+        setTimeout(() => {
+          this.speak(remainingText, { rate });
+        }, 100);
+      }
+    }
   }
 }

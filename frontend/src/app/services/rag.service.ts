@@ -29,10 +29,13 @@ export interface RagQueryResponse {
 }
 
 export interface RagSource {
+  id: string;
   title: string;
-  page: string;
-  span: string;
-  citation: string;
+  page?: number;
+  spanStart: number;
+  spanEnd: number;
+  text: string;
+  chunkId?: string;
 }
 
 export interface RagAnswerResponse {

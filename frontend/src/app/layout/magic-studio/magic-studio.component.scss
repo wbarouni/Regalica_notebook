@@ -1,0 +1,619 @@
+// Magic Studio - Design Noir & Blanc Raffiné
+.magic-studio {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border: 1px solid #e5e7eb;
+}
+
+// Header
+.studio-header {
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+}
+
+.studio-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.studio-tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.tab-btn {
+  background: none;
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 0.875rem;
+  font-weight: 500;
+  
+  &:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+  }
+  
+  &.active {
+    background: #111827;
+    color: white;
+    border-color: #111827;
+  }
+}
+
+// Content Area
+.studio-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+// Mind Map Styles
+.mindmap-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mindmap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.mindmap-info {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.node-count, .connection-count {
+  font-weight: 500;
+}
+
+.mindmap-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  background: none;
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  
+  &:hover:not(:disabled) {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.mindmap-canvas-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.mindmap-canvas {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.mindmap-empty, .mindmap-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #6b7280;
+}
+
+.empty-icon, .loading-spinner {
+  margin-bottom: 1rem;
+}
+
+.empty-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem;
+}
+
+.empty-description {
+  margin: 0;
+  max-width: 20rem;
+  line-height: 1.5;
+}
+
+.loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #111827;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// Podcast Styles
+.podcast-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.podcast-header {
+  margin-bottom: 1.5rem;
+}
+
+.podcast-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.podcast-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.podcast-duration {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.podcast-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.podcast-text {
+  flex: 1;
+  
+  h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 0.75rem;
+  }
+}
+
+.script-content {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: #374151;
+  max-height: 20rem;
+  overflow-y: auto;
+}
+
+.podcast-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+.control-btn {
+  background: none;
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  &:hover:not(:disabled) {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  &.play-btn {
+    background: #111827;
+    color: white;
+    border-color: #111827;
+    
+    &:hover:not(:disabled) {
+      background: #374151;
+    }
+  }
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  
+  label {
+    font-weight: 500;
+  }
+  
+  select {
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.875rem;
+    color: #111827;
+    cursor: pointer;
+    
+    &:focus {
+      outline: none;
+      border-color: #111827;
+      box-shadow: 0 0 0 1px #111827;
+    }
+  }
+}
+
+.podcast-progress {
+  margin-top: 1rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 0.5rem;
+  background: #e5e7eb;
+  border-radius: 0.25rem;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #111827;
+  transition: width 0.1s ease;
+}
+
+.progress-time {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.podcast-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #6b7280;
+}
+
+// Actions Styles
+.actions-container {
+  height: 100%;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.action-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  transition: all 0.15s;
+  
+  &:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.action-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  
+  svg {
+    color: #6b7280;
+  }
+  
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+  }
+}
+
+.action-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0 0 1rem;
+}
+
+.action-execute-btn {
+  background: #111827;
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 0.875rem;
+  font-weight: 500;
+  width: 100%;
+  
+  &:hover:not(:disabled) {
+    background: #374151;
+  }
+  
+  &:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+  }
+}
+
+.generated-content {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.content-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+  }
+}
+
+.content-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.content-btn {
+  background: none;
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  
+  &:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+  }
+}
+
+.content-body {
+  padding: 1rem;
+  
+  pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #374151;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .studio-tabs {
+    justify-content: center;
+  }
+  
+  .mindmap-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .mindmap-info {
+    justify-content: center;
+  }
+  
+  .mindmap-actions {
+    justify-content: center;
+  }
+  
+  .podcast-controls {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  
+  .actions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .content-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .content-actions {
+    justify-content: center;
+  }
+}
+
+// Scrollbar personnalisée
+.script-content::-webkit-scrollbar,
+.actions-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.script-content::-webkit-scrollbar-track,
+.actions-container::-webkit-scrollbar-track {
+  background: #f9fafb;
+}
+
+.script-content::-webkit-scrollbar-thumb,
+.actions-container::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+  
+  &:hover {
+    background: #9ca3af;
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.generated-content {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.action-card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+// États de chargement
+.actions-container.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+// Accessibilité
+@media (prefers-reduced-motion: reduce) {
+  .action-card,
+  .generated-content,
+  .loading-spinner {
+    animation: none;
+  }
+  
+  .control-btn,
+  .action-btn,
+  .content-btn {
+    transition: none;
+  }
+}
+
+// Mode sombre (pour future extension)
+@media (prefers-color-scheme: dark) {
+  .magic-studio {
+    background: #111827;
+    border-color: #374151;
+  }
+  
+  .studio-header {
+    background: #1f2937;
+    border-color: #374151;
+  }
+  
+  .studio-title {
+    color: white;
+  }
+  
+  .tab-btn {
+    color: #d1d5db;
+    border-color: #4b5563;
+    
+    &:hover {
+      background: #374151;
+      border-color: #6b7280;
+    }
+    
+    &.active {
+      background: white;
+      color: #111827;
+      border-color: white;
+    }
+  }
+}
