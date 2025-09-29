@@ -5,12 +5,13 @@ services:
   # Backend Express.js
   - type: web
     name: regalica-backend
-    env: node
+    runtime: node
     region: frankfurt
     plan: free
+    rootDir: ./backend
     buildCommand: npm install
     startCommand: npm start
-    rootDir: ./backend
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
@@ -18,7 +19,7 @@ services:
         value: 10000
       - key: LOG_LEVEL
         value: info
-      - key: DB_URL
+      - key: DATABASE_URL
         fromDatabase:
           name: regalica-db
           property: connectionString
@@ -43,17 +44,22 @@ services:
   # Frontend Angular
   - type: web
     name: regalica-frontend
-    env: static
-    buildCommand: npm install && npm run build -- --configuration=production
-    staticPublishPath: ./dist/regalica-frontend
+    runtime: static
+    region: frankfurt
+    plan: free
     rootDir: ./frontend
+    buildCommand: npm install --legacy-peer-deps && npm run build -- --configuration=production
+    staticPublishPath: ./dist/regalica-frontend/browser
     envVars:
-      - key: NG_APP_API_BASE_URL
-        value: https://regalica-backend.onrender.com
-      - key: NG_APP_MAX_UPLOAD_MB
-        value: 100
-      - key: NG_APP_PAGE_SIZE
-        value: 20
+      - key: NODE_ENV
+        value: production
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
     routes:
       - type: rewrite
         source: /*
@@ -67,3 +73,4 @@ databases:
     user: regalica_user
     plan: free
     region: frankfurt
+    ipAllowList: []
