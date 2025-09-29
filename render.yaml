@@ -84,8 +84,9 @@ services:
     autoDeploy: true
 
   # Frontend Angular
-  - type: static
+  - type: web
     name: regalica-frontend
+    runtime: static
     plan: starter
     rootDir: ./frontend
     buildCommand: npm ci --legacy-peer-deps && npm run build -- --configuration=production
