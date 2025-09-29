@@ -6,30 +6,54 @@ services:
   - type: web
     name: regalica-backend
     env: node
-    region: frankfurt  # ou oregon, singapore selon votre localisation
+    region: frankfurt
     plan: free
-    buildCommand: cd backend && npm install
-    startCommand: cd backend && npm start
+    buildCommand: npm install
+    startCommand: npm start
+    rootDir: ./backend
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
-      - key: DATABASE_URL
+      - key: LOG_LEVEL
+        value: info
+      - key: DB_URL
         fromDatabase:
           name: regalica-db
           property: connectionString
+      - key: DB_SCHEMA
+        value: nbk
+      - key: MAX_UPLOAD_MB
+        value: 100
+      - key: EMBED_MODEL
+        value: e5
+      - key: EMBED_DIM
+        value: 1024
+      - key: CHUNK_TOKENS_MAX
+        value: 1800
+      - key: CHUNK_OVERLAP_PCT
+        value: 0.25
+      - key: ALLOWED_MIME
+        value: application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/html,text/plain
+      - key: OCR_ENABLE
+        value: false
     autoDeploy: true
 
   # Frontend Angular
   - type: web
     name: regalica-frontend
     env: static
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist/regalica-notebook
+    buildCommand: npm install && npm run build -- --configuration=production
+    staticPublishPath: ./dist/regalica-frontend
+    rootDir: ./frontend
     envVars:
-      - key: API_URL
+      - key: NG_APP_API_BASE_URL
         value: https://regalica-backend.onrender.com
+      - key: NG_APP_MAX_UPLOAD_MB
+        value: 100
+      - key: NG_APP_PAGE_SIZE
+        value: 20
     routes:
       - type: rewrite
         source: /*
