@@ -1,51 +1,7 @@
 const axios = require('axios');
 const config = require('../config');
 const logger = require('../utils/logger');
-
-/**
- * Détecte la langue d'un texte
- * @param {string} text - Texte à analyser
- * @returns {string} - Code langue (fr, en, ar)
- */
-function detectLanguage(text) {
-  if (!text || !text.trim()) {
-    return 'en'; // Par défaut
-  }
-
-  const cleanText = text.toLowerCase().trim();
-  
-  // Détection simple basée sur des mots-clés et caractères
-  const frenchWords = ['le', 'la', 'les', 'de', 'du', 'des', 'et', 'est', 'dans', 'pour', 'avec', 'sur', 'par', 'que', 'qui', 'une', 'un'];
-  const englishWords = ['the', 'and', 'is', 'in', 'to', 'of', 'a', 'that', 'it', 'with', 'for', 'as', 'was', 'on', 'are', 'you'];
-  const arabicPattern = /[\u0600-\u06FF]/;
-
-  // Vérifier la présence de caractères arabes
-  if (arabicPattern.test(text)) {
-    logger.info(`[rag/synthesize] Langue détectée: arabe`);
-    return 'ar';
-  }
-
-  // Compter les mots français et anglais
-  const words = cleanText.split(/\s+/);
-  let frenchCount = 0;
-  let englishCount = 0;
-
-  words.forEach(word => {
-    if (frenchWords.includes(word)) frenchCount++;
-    if (englishWords.includes(word)) englishCount++;
-  });
-
-  // Déterminer la langue majoritaire
-  let detectedLang = 'en'; // Par défaut
-  if (frenchCount > englishCount && frenchCount > 0) {
-    detectedLang = 'fr';
-  } else if (englishCount > 0) {
-    detectedLang = 'en';
-  }
-
-  logger.info(`[rag/synthesize] Langue détectée: ${detectedLang} (fr:${frenchCount}, en:${englishCount})`);
-  return detectedLang;
-}
+const { detectLanguage } = require('./lang');
 
 /**
  * Génère un prompt structuré pour le LLM

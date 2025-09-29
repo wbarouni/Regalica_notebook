@@ -1,6 +1,7 @@
 const { countTokens } = require("../utils/tokencount");
 const config = require("../config");
 const logger = require("../utils/logger");
+const { detectLanguage } = require("../rag/lang");
 
 /**
  * Découpe les sections normalisées en chunks avec overlap
@@ -33,6 +34,9 @@ const chunkSection = (section, startSeq, pageNo) => {
   const { text, heading_path, span_start, span_end } = section;
   const tokens = countTokens(text);
   
+  // Détecter la langue du texte
+  const lang = detectLanguage(text);
+  
   // Si la section est déjà assez petite, la retourner telle quelle
   if (tokens <= config.chunkTokensMax) {
     return [{
@@ -42,7 +46,8 @@ const chunkSection = (section, startSeq, pageNo) => {
       heading_path,
       span_start,
       span_end,
-      page_no: pageNo
+      page_no: pageNo,
+      meta: { lang }
     }];
   }
   
@@ -69,7 +74,8 @@ const chunkSection = (section, startSeq, pageNo) => {
         heading_path,
         span_start: chunkStart,
         span_end: chunkStart + currentChunk.length - 1,
-        page_no: pageNo
+        page_no: pageNo,
+        meta: { lang }
       });
       
       // Calculer l'overlap
@@ -96,7 +102,8 @@ const chunkSection = (section, startSeq, pageNo) => {
       heading_path,
       span_start: chunkStart,
       span_end: span_end,
-      page_no: pageNo
+      page_no: pageNo,
+      meta: { lang }
     });
   }
   
