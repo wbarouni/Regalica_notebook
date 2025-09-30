@@ -36,6 +36,7 @@ export interface RagSource {
   spanEnd: number;
   text: string;
   chunkId?: string;
+  confidence?: number;
 }
 
 export interface RagAnswerResponse {
@@ -220,11 +221,19 @@ export class RagService {
     let match;
     
     while ((match = citationRegex.exec(text)) !== null) {
+      // Assumons que match[3] contient les informations de span sous la forme 'start-end'
+      const spanParts = match[3].split("-");
+      const spanStart = parseInt(spanParts[0]);
+      const spanEnd = parseInt(spanParts[1]);
+
       citations.push({
+        id: `${match[1]}-${match[2]}-${match[3]}`, // Générer un ID unique
         title: match[1],
-        page: match[2],
-        span: match[3],
-        citation: match[0]
+        page: parseInt(match[2]),
+        spanStart: spanStart,
+        spanEnd: spanEnd,
+        text: "", // Le texte sera rempli par le viewer, ou peut être extrait si disponible
+        // chunkId: undefined // Si chunkId est disponible dans le regex, l'ajouter ici
       });
     }
     

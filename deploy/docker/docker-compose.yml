@@ -63,7 +63,7 @@ services:
     volumes:
       - embedder_cache:/root/.cache
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get(\'http://localhost:8000/health\')"]
+      test: ["CMD", "python", "-c", "import requests; requests.get(\"http://localhost:8000/health\")"]
       interval: 30s
       timeout: 10s
       retries: 10
@@ -79,7 +79,7 @@ services:
     volumes:
       - reranker_cache:/root/.cache
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get(\'http://localhost:8001/health\')"]
+      test: ["CMD", "python", "-c", "import requests; requests.get(\"http://localhost:8001/health\")"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -99,7 +99,7 @@ services:
       CHUNK_TOKENS_MAX: 1800
       CHUNK_OVERLAP_PCT: 0.25
       ALLOWED_MIME: application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/html,text/plain
-      OCR_ENABLE: false
+      OCR_ENABLE: "false"
     volumes:
       - uploads:/app/uploads
     healthcheck:
@@ -139,3 +139,4 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
+
