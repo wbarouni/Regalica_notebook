@@ -158,7 +158,7 @@ export class UploadComponent {
     }
   }
 
-  onFileSelected(event: any): void {
+  onFileSelected(event: Event & { target: HTMLInputElement }): void {
     const file = event.target.files[0];
     if (file) {
       this.handleFileSelection(file);

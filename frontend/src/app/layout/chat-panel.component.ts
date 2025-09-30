@@ -3,11 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-
 import { RagService, ChatMessage, RagSource } from '../services/rag.service';
 import { ViewerService } from '../core/services/viewer.service';
 import { AppConfigService } from '../core/services/app-config.service';
-
 @Component({
   selector: 'app-chat-panel',
   standalone: true,
@@ -45,7 +43,6 @@ import { AppConfigService } from '../core/services/app-config.service';
           </div>
         </div>
       </div>
-
       <!-- Messages Container -->
       <div class="messages-container" 
            #messagesContainer
@@ -78,7 +75,6 @@ import { AppConfigService } from '../core/services/app-config.service';
             </div>
           </div>
         </div>
-
         <!-- Messages List -->
         <div class="messages-list" *ngIf="messages.length > 0">
           <div *ngFor="let message of messages; trackBy: trackByMessageId" 
@@ -100,7 +96,6 @@ import { AppConfigService } from '../core/services/app-config.service';
                 </svg>
               </div>
             </div>
-
             <!-- Assistant Message -->
             <div *ngIf="message.role === 'assistant'" class="assistant-message">
               <div class="message-avatar">
@@ -122,7 +117,6 @@ import { AppConfigService } from '../core/services/app-config.service';
                     <p>{{ getNoAnswerExplanation() }}</p>
                   </div>
                 </div>
-
                 <!-- Regular Answer -->
                 <div *ngIf="!isNoAnswer(message)" class="message-content">
                   <div class="answer-text" [innerHTML]="formatMessageContent(message.content)"></div>
@@ -149,7 +143,6 @@ import { AppConfigService } from '../core/services/app-config.service';
                     </div>
                   </div>
                 </div>
-
                 <!-- Message Footer -->
                 <div class="message-footer">
                   <div class="message-meta">
@@ -171,7 +164,6 @@ import { AppConfigService } from '../core/services/app-config.service';
                       {{ formatConfidence(message.confidence) }} confidence
                     </span>
                   </div>
-
                   <!-- Actions -->
                   <div class="message-actions">
                     <button class="action-btn"
@@ -194,7 +186,6 @@ import { AppConfigService } from '../core/services/app-config.service';
               </div>
             </div>
           </div>
-
           <!-- Streaming Indicator -->
           <div *ngIf="isStreaming" class="streaming-indicator">
             <div class="message-avatar">
@@ -215,7 +206,6 @@ import { AppConfigService } from '../core/services/app-config.service';
           </div>
         </div>
       </div>
-
       <!-- Input Area -->
       <div class="input-area">
         <div class="input-container">
@@ -260,7 +250,6 @@ import { AppConfigService } from '../core/services/app-config.service';
 export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
   @ViewChild('queryInput') private queryInput!: ElementRef;
-
   messages: ChatMessage[] = [];
   currentQuery: string = '';
   isStreaming: boolean = false;
@@ -268,7 +257,6 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
   
   private destroy$ = new Subject<void>();
   private shouldScrollToBottom = false;
-
   // Exemples de questions
   exampleQuestions = [
     "What are the main topics covered in the documents?",
@@ -276,30 +264,25 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
     "What are the most important recommendations?",
     "Are there any specific conclusions mentioned?"
   ];
-
   constructor(
     private ragService: RagService,
     private viewerService: ViewerService,
     private appConfig: AppConfigService
   ) {}
-
   ngOnInit(): void {
     this.setupSubscriptions();
     this.loadChatHistory();
   }
-
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
-
   ngAfterViewChecked(): void {
     if (this.shouldScrollToBottom) {
       this.scrollToBottom();
       this.shouldScrollToBottom = false;
     }
   }
-
   /**
    * Configure les abonnements aux services
    */
@@ -311,7 +294,6 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.messages = messages;
         this.shouldScrollToBottom = true;
       });
-
     // État de streaming
     this.ragService.loading$
       .pipe(takeUntil(this.destroy$))
@@ -322,7 +304,6 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
         }
       });
   }
-
   /**
    * Charge l'historique du chat
    */
@@ -330,7 +311,6 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
     // L'historique est géré par le RagService
     // Cette méthode peut être étendue pour charger depuis le localStorage
   }
-
   /**
    * Envoie une question
    */
@@ -339,14 +319,12 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (!query || this.isStreaming) {
       return;
     }
-
     // Vider le champ de saisie
     this.currentQuery = '';
-
     try {
       await this.ragService.chatWithRag(query);
-    } catch (error) {
-      console.error('Error sending query:', error);
+    } catch {
+      // Gérer l'erreur ici si nécessaire, par exemple en affichant un message à l'utilisateur
       this.connectionStatus = 'disconnected';
       
       // Réessayer la connexion après un délai
@@ -355,7 +333,6 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
       }, 3000);
     }
   }
-
   /**
    * Utilise une question d'exemple
    */
@@ -363,7 +340,6 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.currentQuery = question;
     this.focusInput();
   }
-
   /**
    * Gère l'appui sur les touches
    */
@@ -373,7 +349,6 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.sendQuery();
     }
   }
-
   /**
    * Efface l'historique des messages
    */
@@ -382,13 +357,11 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.ragService.clearMessages();
     }
   }
-
   /**
    * Exporte le chat
    */
   async exportChat(): Promise<void> {
     if (this.messages.length === 0) return;
-
     try {
       const chatData = this.messages.map(msg => ({
         role: msg.role,
@@ -398,11 +371,9 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
         confidence: msg.confidence,
         processingTimeMs: msg.processingTimeMs
       }));
-
       const blob = new Blob([JSON.stringify(chatData, null, 2)], {
         type: 'application/json'
       });
-
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -411,8 +382,9 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error exporting chat:', error);
+    } catch {
+      console.error("Failed to export chat:", __);
+      alert("Failed to export chat history.");
     }
   }
 
@@ -420,23 +392,19 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
    * Clique sur une citation - déclenche le scroll et la surbrillance dans le viewer
    */
   onCitationClick(source: RagSource): void {
-    console.log('ChatPanel: Citation clicked', source);
-    
-    // Utiliser la nouvelle signature scrollToSpan avec paramètres séparés
     this.viewerService.scrollToSpan(
-      source.id,           // docId
-      source.page,         // page (optionnel)
-      source.spanStart,    // start
-      source.spanEnd,      // end
-      source.chunkId       // chunkId (optionnel)
+      source.id,
+      source.page,
+      source.spanStart,
+      source.spanEnd,
+      source.chunkId
     );
-    
-    // Optionnel: feedback visuel sur la citation cliquée
+
     const citationElement = document.querySelector(`[data-source-id="${source.id}"][data-span-start="${source.spanStart}"]`);
     if (citationElement) {
-      citationElement.classList.add('citation-clicked');
+      citationElement.classList.add("citation-clicked");
       setTimeout(() => {
-        citationElement.classList.remove('citation-clicked');
+        citationElement.classList.remove("citation-clicked");
       }, 1000);
     }
   }
@@ -448,11 +416,10 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
     try {
       await navigator.clipboard.writeText(message.content);
       // TODO: Afficher une notification de succès
-    } catch (error) {
+    } catch {
       console.error('Error copying message:', error);
     }
   }
-
   /**
    * Améliore une question
    */
@@ -467,7 +434,6 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
       }
     }
   }
-
   /**
    * Formate le contenu d'un message (support basique du markdown)
    */
@@ -478,7 +444,6 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
       .replace(/`(.*?)`/g, '<code>$1</code>')
       .replace(/\n/g, '<br>');
   }
-
   /**
    * Formate l'heure
    */
@@ -488,7 +453,6 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
       minute: '2-digit' 
     });
   }
-
   /**
    * Formate le temps de traitement
    */
@@ -499,14 +463,12 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
       return `${(timeMs / 1000).toFixed(1)}s`;
     }
   }
-
   /**
    * Formate le score de confiance
    */
   formatConfidence(confidence: number): string {
     return `${Math.round(confidence * 100)}%`;
   }
-
   /**
    * Obtient le niveau de confiance
    */
@@ -515,28 +477,24 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (confidence >= 0.6) return 'medium';
     return 'low';
   }
-
   /**
    * Obtient la classe CSS pour le score de confiance
    */
   getConfidenceClass(confidence: number): string {
     return `confidence-${this.getConfidenceLevel(confidence)}`;
   }
-
   /**
    * Vérifie si un message est une réponse "NO_ANSWER"
    */
   isNoAnswer(message: ChatMessage): boolean {
     return message.role === 'assistant' && message.content.trim() === 'NO_ANSWER';
   }
-
   /**
    * Obtient un message d'explication pour NO_ANSWER
    */
   getNoAnswerExplanation(): string {
     return "I couldn't find relevant information in the uploaded documents to answer your question. Try rephrasing your question or asking about a different topic.";
   }
-
   /**
    * Obtient le texte du statut de connexion
    */
@@ -547,21 +505,18 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
       default: return 'Connected';
     }
   }
-
   /**
    * TrackBy pour optimiser le rendu des messages
    */
   trackByMessageId(index: number, message: ChatMessage): string {
     return message.id;
   }
-
   /**
    * TrackBy pour optimiser le rendu des sources
    */
   trackBySourceId(index: number, source: RagSource): string {
     return source.id + source.spanStart + source.spanEnd;
   }
-
   /**
    * Fait défiler vers le bas
    */
@@ -571,11 +526,10 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
         const element = this.messagesContainer.nativeElement;
         element.scrollTop = element.scrollHeight;
       }
-    } catch (error) {
-      console.error('Error scrolling to bottom:', error);
+    } catch {
+      // L'erreur est intentionnellement ignorée ici pour éviter de bloquer le défilement.
     }
   }
-
   /**
    * Met le focus sur le champ de saisie
    */

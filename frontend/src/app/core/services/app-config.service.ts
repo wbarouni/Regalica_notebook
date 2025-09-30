@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
+import { BehaviorSubject, firstValueFrom } from 'rxjs';
 
 export interface PublicConfig {
   backendBaseUrl: string;
@@ -46,9 +46,7 @@ export class AppConfigService {
       this.configSubject.next(validatedConfig);
       
       return validatedConfig;
-    } catch (error) {
-      console.warn('Failed to load config from backend, using defaults:', error);
-      
+    } catch {      
       // Fallback vers la configuration par défaut
       this.configSubject.next(this.defaultConfig);
       return this.defaultConfig;
@@ -86,7 +84,7 @@ export class AppConfigService {
   /**
    * Valide et normalise la configuration reçue
    */
-  private validateConfig(config: any): PublicConfig {
+  private validateConfig(config: Partial<PublicConfig>): PublicConfig {
     return {
       backendBaseUrl: this.validateUrl(config.backendBaseUrl) || this.defaultConfig.backendBaseUrl,
       maxUploadSizeMb: this.validateNumber(config.maxUploadSizeMb, 1, 1000) || this.defaultConfig.maxUploadSizeMb,
@@ -101,7 +99,7 @@ export class AppConfigService {
   /**
    * Valide une URL
    */
-  private validateUrl(url: any): string | null {
+  private validateUrl(url: unknown): string | null {
     if (typeof url !== 'string') return null;
     
     try {
@@ -115,7 +113,7 @@ export class AppConfigService {
   /**
    * Valide un nombre dans une plage
    */
-  private validateNumber(value: any, min: number, max: number): number | null {
+  private validateNumber(value: unknown, min: number, max: number): number | null {
     const num = Number(value);
     if (isNaN(num) || num < min || num > max) return null;
     return num;

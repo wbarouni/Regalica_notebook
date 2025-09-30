@@ -85,7 +85,7 @@ export class RagService {
    * Recherche des candidats pour une requête
    */
   searchCandidates(query: string, topK: number = 50, lang?: string): Observable<RagQueryResponse> {
-    const body: any = { query, top_k: topK };
+    const body: { query: string; top_k: number; lang?: string } = { query, top_k: topK };
     if (lang) body.lang = lang;
     
     return this.http.post<RagQueryResponse>(`${this.apiUrl}/query`, body);
@@ -95,7 +95,7 @@ export class RagService {
    * Pose une question et obtient une réponse complète
    */
   askQuestion(query: string, topK: number = 50, lang?: string): Observable<RagAnswerResponse> {
-    const body: any = { query, top_k: topK };
+    const body: { query: string; top_k: number; lang?: string } = { query, top_k: topK };
     if (lang) body.lang = lang;
     
     this.loadingSubject.next(true);
@@ -105,7 +105,7 @@ export class RagService {
     // Mettre à jour le loading state quand la requête se termine
     request.subscribe({
       next: () => this.loadingSubject.next(false),
-      error: () => this.loadingSubject.next(false)
+      error: () => { /* Handle error or log it */ this.loadingSubject.next(false); }
     });
     
     return request;
@@ -132,7 +132,7 @@ export class RagService {
   /**
    * Ajoute une réponse de l'assistant au chat
    */
-  addAssistantMessage(content: string, sources?: RagSource[], confidence?: number, stats?: any): string {
+  addAssistantMessage(content: string, sources?: RagSource[], confidence?: number, stats?: { total_processing_time_ms?: number; lang_detected?: string }): string {
     const messageId = this.generateMessageId();
     const message: ChatMessage = {
       id: messageId,
@@ -160,7 +160,7 @@ export class RagService {
     
     try {
       // Faire l'appel API
-      const response = await this.askQuestion(query, topK, lang).toPromise();
+      const response = await this.askQuestion(query, topK, lang).toPromise() as RagAnswerResponse;
       
       if (response) {
         // Ajouter la réponse de l'assistant
@@ -193,7 +193,7 @@ export class RagService {
   /**
    * Obtient les statistiques RAG
    */
-  getStats(): Observable<any> {
+  getStats(): Observable<unknown> {
     return this.http.get(`${this.apiUrl}/stats`);
   }
 

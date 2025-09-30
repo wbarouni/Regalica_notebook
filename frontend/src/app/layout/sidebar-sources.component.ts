@@ -5,8 +5,7 @@ import { Subject } from 'rxjs';
 import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { UploadDropzoneComponent } from '../features/upload/upload-dropzone.component';
-import { Document, DocumentFilter, PaginatedResponse } from '../services/ingest.service';
-import { IngestService } from '../services/ingest.service';
+import { Document, DocumentFilter, IngestService } from '../services/ingest.service';
 import { ViewerService } from '../core/services/viewer.service';
 
 @Component({
@@ -58,7 +57,8 @@ import { ViewerService } from '../core/services/viewer.service';
           <button *ngIf="filters.search"
                   (click)="clearSearch()"
                   class="clear-search-btn"
-                  title="Clear search">
+                  title="Clear search"
+                  aria-label="Effacer la recherche">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
@@ -67,10 +67,11 @@ import { ViewerService } from '../core/services/viewer.service';
 
         <!-- Type Filter -->
         <div class="filter-group">
-          <label class="filter-label">Type</label>
+          <label class="filter-label" for="typeFilter">Type</label>
           <select [(ngModel)]="filters.type"
                   (ngModelChange)="onFilterChange()"
-                  class="filter-select">
+                  class="filter-select"
+                  id="typeFilter">
             <option value="">All types</option>
             <option value="application/pdf">PDF</option>
             <option value="application/vnd.openxmlformats-officedocument.wordprocessingml.document">Word</option>
@@ -81,10 +82,11 @@ import { ViewerService } from '../core/services/viewer.service';
 
         <!-- Status Filter -->
         <div class="filter-group">
-          <label class="filter-label">Status</label>
+          <label class="filter-label" for="statusFilter">Status</label>
           <select [(ngModel)]="filters.status"
                   (ngModelChange)="onFilterChange()"
-                  class="filter-select">
+                  class="filter-select"
+                  id="statusFilter">
             <option value="">All status</option>
             <option value="ready">Ready</option>
             <option value="processing">Processing</option>
@@ -136,7 +138,10 @@ import { ViewerService } from '../core/services/viewer.service';
           <div *ngFor="let doc of documents; trackBy: trackByDocId" 
                class="document-item"
                [class.selected]="selectedDocumentId === doc.id"
-               (click)="selectDocument(doc)">
+               (click)="selectDocument(doc)"
+               (keydown.enter)="selectDocument(doc)"
+               role="button"
+               tabindex="0">
             
             <!-- Document Icon -->
             <div class="document-icon" [class]="'type-' + getDocumentTypeClass(doc.mimeType)">
@@ -368,7 +373,7 @@ export class SidebarSourcesComponent implements OnInit, OnDestroy {
   /**
    * Appelé quand un upload se termine avec succès
    */
-  onUploadComplete(document: Document): void {
+  onUploadComplete(): void {
     // Actualiser la liste
     this.refreshDocuments();
     

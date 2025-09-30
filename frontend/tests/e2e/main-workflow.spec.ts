@@ -1,4 +1,5 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import path from 'path';
 
 /**
@@ -256,7 +257,7 @@ test.describe('Workflow Principal RAG', () => {
     await expect(shell).toBeVisible();
     
     // En mobile, les panneaux doivent être en mode tabs/navigation
-    const mobileNavigation = page.locator('.mobile-nav, .bottom-nav, .tab-navigation, .mobile-tabs');
+    const mobileNavigation = page.locator(".mobile-nav, .bottom-nav, .tab-navigation, .mobile-tabs"); // eslint-disable-line @typescript-eslint/no-unused-vars
     
     // Si pas de navigation mobile spécifique, vérifier que les panneaux sont empilés
     const panels = page.locator('.panel, .sidebar-sources, .chat-panel, .viewer-panel');
@@ -265,6 +266,7 @@ test.describe('Workflow Principal RAG', () => {
     if (panelCount > 0) {
       // Vérifier que les panneaux sont accessibles via navigation
       for (let i = 0; i < Math.min(panelCount, 3); i++) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const panel = panels.nth(i);
         
         // Chercher les boutons de navigation pour chaque panneau

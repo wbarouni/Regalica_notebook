@@ -109,7 +109,7 @@ export class IngestService {
    * Obtient la liste des documents avec pagination et filtres
    */
   getDocuments(params: DocumentFilter & { page?: number; pageSize?: number } = {}): Observable<PaginatedResponse<Document>> {
-    return this.http.get<PaginatedResponse<Document>>(`${this.apiUrl}/documents`, { params: params as any });
+    return this.http.get<PaginatedResponse<Document>>(`${this.apiUrl}/documents`, { params: params as HttpParams });
   }
 
   /**
@@ -136,7 +136,7 @@ export class IngestService {
   /**
    * Obtient les statistiques d'ingestion
    */
-  getStats(): Observable<any> {
+  getStats(): Observable<unknown> {
     return this.http.get(`${this.apiUrl}/stats`);
   }
 }

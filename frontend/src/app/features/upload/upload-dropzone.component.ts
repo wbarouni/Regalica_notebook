@@ -74,7 +74,7 @@ import { CommonModule } from '@angular/common';
   `]
 })
 export class UploadDropzoneComponent {
-  @Output() uploadComplete = new EventEmitter<any>();
+  @Output() uploadComplete = new EventEmitter<void>();
   @Output() uploadError = new EventEmitter<string>();
 
   onDragOver(event: DragEvent): void {
@@ -93,16 +93,16 @@ export class UploadDropzoneComponent {
     }
   }
 
-  onFileSelect(event: any): void {
+  onFileSelect(event: Event): void {
     const files = event.target.files;
     if (files) {
       this.handleFiles(files);
     }
   }
 
-  private handleFiles(files: FileList): void {
+  private handleFiles(): void {
     // Simulation d'upload pour le moment
-    console.log('Files selected:', files);
+    
     this.uploadComplete.emit({ message: 'Upload completed' });
   }
 }

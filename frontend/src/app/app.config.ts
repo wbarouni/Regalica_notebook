@@ -1,6 +1,6 @@
 import { ApplicationConfig, APP_INITIALIZER } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient, withInterceptors, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { provideHttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 
 import { routes } from './app.routes';
@@ -10,7 +10,7 @@ import { ApiBaseInterceptor } from './core/interceptors/api-base.interceptor';
 /**
  * Factory function pour initialiser la configuration de l'application
  */
-export function initializeApp(appConfig: AppConfigService) {
+export function initializeApp(appConfig: AppConfigService): () => Promise<void> {
   return () => appConfig.loadConfig();
 }
 

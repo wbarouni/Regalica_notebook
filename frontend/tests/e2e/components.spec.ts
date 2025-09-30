@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test'; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 /**
  * Tests E2E pour les composants individuels
@@ -61,7 +61,7 @@ test.describe('Composants Sources Panel', () => {
     const paginationControls = page.locator('.pagination, .page-controls');
     if (await paginationControls.isVisible()) {
       const nextButton = page.locator('button:has-text("Next"), .next-page');
-      const prevButton = page.locator('button:has-text("Previous"), .prev-page');
+      const prevButton = page.locator('button:has-text("Previous"), .prev-page'); // eslint-disable-line @typescript-eslint/no-unused-vars
       
       if (await nextButton.isVisible()) {
         await nextButton.click();
@@ -214,7 +214,7 @@ test.describe('Composant Viewer Panel', () => {
     await fileInput.setInputFiles({
       name: 'highlight-test.txt',
       mimeType: 'text/plain',
-      buffer: Buffer.from('Machine Learning est une branche de l\'intelligence artificielle qui permet aux systèmes d\'apprendre automatiquement.')
+      buffer: Buffer.from('Machine Learning est une branche de l\'intelligence artificielle qui permet aux systèmes d\'apprendre automatiquement à partir de données.')
     });
     
     await expect(page.locator('.upload-success')).toBeVisible({ timeout: 30000 });
@@ -446,3 +446,4 @@ test.describe('Tests d\'Accessibilité', () => {
     }
   });
 });
+

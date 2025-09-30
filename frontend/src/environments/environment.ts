@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiBaseUrl: 'http://localhost:8080',
+  apiBaseUrl: '', // L'URL du backend sera fournie dynamiquement ou via une variable d'environnement
   maxUploadMb: 100,
   pageSize: 20,
   allowedMimeTypes: [

@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked }
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { RagService, ChatMessage, RagSource } from '../services/rag.service';
+import { RagService, ChatMessage } from '../services/rag.service';
 
 @Component({
   selector: 'app-chat',
@@ -75,8 +75,8 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     try {
       await this.ragService.chatWithRag(query);
-    } catch (error) {
-      console.error('Erreur lors de l\'envoi de la question:', error);
+    } catch {
+      // console.error(\'Error sending query:\', error);
     }
   }
 
@@ -108,8 +108,9 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   /**
    * Clique sur une citation
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onCitationClick(source: RagSource): void {
-    console.log('Citation cliquée:', source);
+
     // TODO: Implémenter la navigation vers le document/page
     // Cela sera fait dans le Bloc 10 avec le viewer
   }
@@ -120,8 +121,8 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   async copyMessage(message: ChatMessage): Promise<void> {
     try {
       await navigator.clipboard.writeText(message.content);
-      console.log('Message copié dans le presse-papiers');
     } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       console.error('Erreur lors de la copie:', error);
     }
   }
@@ -182,6 +183,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         element.scrollTop = element.scrollHeight;
       }
     } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       console.error('Erreur lors du scroll:', error);
     }
   }

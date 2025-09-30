@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import { RagService, ChatMessage, RagSource } from '../../services/rag.service';
+import { RagService, ChatMessage } from '../../services/rag.service';
 import { AudioService } from '../../core/services/audio.service';
 
 interface MindMapNode {
@@ -271,8 +271,8 @@ interface MindMapConnection {
                 <button class="content-btn" (click)="exportContent()">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                  </svg>
-                  Export .md
+                </svg>
+                Export .md
                 </button>
               </div>
             </div>
@@ -379,416 +379,375 @@ export class MagicStudioComponent implements OnInit, OnDestroy, AfterViewInit {
       });
   }
 
-  setActiveTab(tab: 'mindmap' | 'podcast' | 'actions'): void {
-    this.activeTab = tab;
-    
-    if (tab === 'mindmap' && this.hasLastResponse && this.mindMapNodes.length === 0) {
-      this.generateMindMapFromResponse(this.lastChatMessage!);
-    }
-  }
-
-  // Mind Map Methods
   private initializeCanvas(): void {
     if (this.mindmapCanvas) {
       this.canvas = this.mindmapCanvas.nativeElement;
       this.ctx = this.canvas.getContext('2d');
       this.resizeCanvas();
-      this.startRenderLoop();
+      window.addEventListener('resize', () => this.resizeCanvas());
+      this.drawMindMap();
     }
   }
 
   private resizeCanvas(): void {
-    if (this.canvas) {
-      const container = this.canvas.parentElement!;
-      this.canvas.width = container.clientWidth;
-      this.canvas.height = container.clientHeight;
+    if (this.canvas && this.canvas.parentElement) {
+      this.canvas.width = this.canvas.parentElement.clientWidth;
+      this.canvas.height = this.canvas.parentElement.clientHeight;
+      this.drawMindMap();
     }
   }
 
-  private startRenderLoop(): void {
-    const render = () => {
-      this.renderMindMap();
-      this.animationFrame = requestAnimationFrame(render);
-    };
-    render();
+  setActiveTab(tab: 'mindmap' | 'podcast' | 'actions'): void {
+    this.activeTab = tab;
+    if (tab === 'mindmap' && this.lastChatMessage) {
+      this.generateMindMapFromResponse(this.lastChatMessage);
+    }
   }
 
-  private renderMindMap(): void {
-    if (!this.ctx || !this.canvas) return;
+  // Mind Map Logic
+  private generateMindMapFromResponse(message: ChatMessage): void {
+    if (this.isGenerating) return;
+    this.isGenerating = true;
+    this.mindMapNodes = [];
+    this.mindMapConnections = [];
 
-    // Clear canvas
+    // Simuler la génération d'une mind map à partir des sources
+    // Dans une vraie application, cela ferait un appel API au backend RAG
+    setTimeout(() => {
+      if (message.sources && message.sources.length > 0) {
+        const nodes: MindMapNode[] = [];
+        const connections: MindMapConnection[] = [];
+        const uniqueConcepts = new Map<string, MindMapNode>();
+
+        // Ajouter un nœud central pour le sujet principal
+        const mainConcept = message.content.split('.')[0]; // Première phrase comme concept principal
+        const mainNode: MindMapNode = {
+          id: 'main',
+          text: mainConcept,
+          x: 0,
+          y: 0,
+          level: 0,
+          sourceIds: [],
+          connections: []
+        };
+        nodes.push(mainNode);
+        uniqueConcepts.set(mainConcept.toLowerCase(), mainNode);
+
+        message.sources.forEach((source, index) => {
+          const conceptText = source.title; // Utiliser le titre de la source comme concept
+          let conceptNode = uniqueConcepts.get(conceptText.toLowerCase());
+
+          if (!conceptNode) {
+            conceptNode = {
+              id: `node-${index}`,
+              text: conceptText,
+              x: Math.random() * 400 - 200,
+              y: Math.random() * 400 - 200,
+              level: 1,
+              sourceIds: [source.id],
+              connections: []
+            };
+            nodes.push(conceptNode);
+            uniqueConcepts.set(conceptText.toLowerCase(), conceptNode);
+          } else {
+            conceptNode.sourceIds.push(source.id);
+          }
+
+          // Ajouter une connexion au nœud principal
+          connections.push({
+            from: mainNode.id,
+            to: conceptNode.id,
+            strength: 1
+          });
+          mainNode.connections.push(conceptNode.id);
+          conceptNode.connections.push(mainNode.id);
+        });
+
+        this.mindMapNodes = nodes;
+        this.mindMapConnections = connections;
+        this.layoutMindMap();
+      }
+      this.isGenerating = false;
+    }, 2000);
+  }
+
+  private layoutMindMap(): void {
+    // Simple force-directed layout simulation
+    const k = 100; // Force constant
+    const repulsion = 10000; // Repulsion strength
+    const attraction = 0.01; // Attraction strength
+    const damping = 0.8; // Damping factor
+    const maxIterations = 100;
+
+    // Initialize positions if not set
+    this.mindMapNodes.forEach(node => {
+      if (node.x === undefined || node.y === undefined) {
+        node.x = Math.random() * (this.canvas?.width || 800);
+        node.y = Math.random() * (this.canvas?.height || 600);
+      }
+    });
+
+    for (let i = 0; i < maxIterations; i++) {
+      const forces = new Map<string, { fx: number; fy: number }>();
+
+      this.mindMapNodes.forEach(node => {
+        forces.set(node.id, { fx: 0, fy: 0 });
+      });
+
+      // Calculate repulsion forces
+      this.mindMapNodes.forEach(node1 => {
+        this.mindMapNodes.forEach(node2 => {
+          if (node1.id === node2.id) return;
+
+          const dx = node2.x - node1.x;
+          const dy = node2.y - node1.y;
+          const dist = Math.sqrt(dx * dx + dy * dy) + 0.1; // Add a small epsilon to prevent division by zero
+
+          const force = repulsion / (dist * dist);
+
+          const fx = (dx / dist) * force;
+          const fy = (dy / dist) * force;
+
+          forces.get(node1.id)!.fx -= fx;
+          forces.get(node1.id)!.fy -= fy;
+          forces.get(node2.id)!.fx += fx;
+          forces.get(node2.id)!.fy += fy;
+        });
+      });
+
+      // Calculate attraction forces
+      this.mindMapConnections.forEach(conn => {
+        const node1 = this.mindMapNodes.find(n => n.id === conn.from);
+        const node2 = this.mindMapNodes.find(n => n.id === conn.to);
+
+        if (node1 && node2) {
+          const dx = node2.x - node1.x;
+          const dy = node2.y - node1.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          const force = (dist * dist) / k * attraction * conn.strength;
+
+          const fx = (dx / dist) * force;
+          const fy = (dy / dist) * force;
+
+          forces.get(node1.id)!.fx += fx;
+          forces.get(node1.id)!.fy += fy;
+          forces.get(node2.id)!.fx -= fx;
+          forces.get(node2.id)!.fy -= fy;
+        }
+      });
+
+      // Apply forces
+      this.mindMapNodes.forEach(node => {
+        const force = forces.get(node.id)!;
+        node.x += force.fx * damping;
+        node.y += force.fy * damping;
+
+        // Keep nodes within bounds
+        if (this.canvas) {
+          node.x = Math.max(0, Math.min(this.canvas.width, node.x));
+          node.y = Math.max(0, Math.min(this.canvas.height, node.y));
+        }
+      });
+    }
+
+    this.drawMindMap();
+  }
+
+  private drawMindMap(): void {
+    if (!this.canvas || !this.ctx) return;
+
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+    const centerX = this.canvas.width / 2;
+    const centerY = this.canvas.height / 2;
+
     // Draw connections
-    this.ctx.strokeStyle = '#e5e7eb';
-    this.ctx.lineWidth = 2;
-    
-    this.mindMapConnections.forEach(connection => {
-      const fromNode = this.mindMapNodes.find(n => n.id === connection.from);
-      const toNode = this.mindMapNodes.find(n => n.id === connection.to);
-      
+    this.mindMapConnections.forEach(conn => {
+      const fromNode = this.mindMapNodes.find(n => n.id === conn.from);
+      const toNode = this.mindMapNodes.find(n => n.id === conn.to);
+
       if (fromNode && toNode) {
         this.ctx!.beginPath();
-        this.ctx!.moveTo(fromNode.x, fromNode.y);
-        this.ctx!.lineTo(toNode.x, toNode.y);
+        this.ctx!.moveTo(fromNode.x + centerX, fromNode.y + centerY);
+        this.ctx!.lineTo(toNode.x + centerX, toNode.y + centerY);
+        this.ctx!.strokeStyle = '#ccc';
         this.ctx!.stroke();
       }
     });
 
     // Draw nodes
     this.mindMapNodes.forEach(node => {
-      this.drawNode(node);
+      this.ctx!.beginPath();
+      this.ctx!.arc(node.x + centerX, node.y + centerY, 10, 0, Math.PI * 2);
+      this.ctx!.fillStyle = '#007bff';
+      this.ctx!.fill();
+      this.ctx!.strokeStyle = '#0056b3';
+      this.ctx!.stroke();
+
+      this.ctx!.font = '12px Arial';
+      this.ctx!.fillStyle = '#333';
+      this.ctx!.textAlign = 'center';
+      this.ctx!.textBaseline = 'middle';
+      this.ctx!.fillText(node.text, node.x + centerX, node.y + centerY + 20);
     });
   }
 
-  private drawNode(node: MindMapNode): void {
-    if (!this.ctx) return;
-
-    const radius = Math.max(30, node.text.length * 3);
-    const color = this.getNodeColor(node.level);
-
-    // Draw circle
-    this.ctx.fillStyle = color;
-    this.ctx.beginPath();
-    this.ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
-    this.ctx.fill();
-
-    // Draw border
-    this.ctx.strokeStyle = '#111827';
-    this.ctx.lineWidth = 2;
-    this.ctx.stroke();
-
-    // Draw text
-    this.ctx.fillStyle = '#111827';
-    this.ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
-    
-    const maxWidth = radius * 1.5;
-    const words = node.text.split(' ');
-    const lines = this.wrapText(words, maxWidth);
-    
-    lines.forEach((line, index) => {
-      const y = node.y + (index - (lines.length - 1) / 2) * 14;
-      this.ctx!.fillText(line, node.x, y);
-    });
-  }
-
-  private wrapText(words: string[], maxWidth: number): string[] {
-    const lines: string[] = [];
-    let currentLine = '';
-
-    words.forEach(word => {
-      const testLine = currentLine + (currentLine ? ' ' : '') + word;
-      const metrics = this.ctx!.measureText(testLine);
-      
-      if (metrics.width > maxWidth && currentLine) {
-        lines.push(currentLine);
-        currentLine = word;
-      } else {
-        currentLine = testLine;
-      }
-    });
-
-    if (currentLine) {
-      lines.push(currentLine);
-    }
-
-    return lines;
-  }
-
-  private getNodeColor(level: number): string {
-    const colors = ['#f3f4f6', '#e5e7eb', '#d1d5db', '#9ca3af'];
-    return colors[Math.min(level, colors.length - 1)];
-  }
-
-  regenerateMindMap(): void {
-    if (this.lastChatMessage) {
-      this.generateMindMapFromResponse(this.lastChatMessage);
-    }
-  }
-
-  private generateMindMapFromResponse(message: ChatMessage): void {
-    if (!message.sources || message.sources.length === 0) return;
-
-    this.isGenerating = true;
-    this.mindMapNodes = [];
-    this.mindMapConnections = [];
-
-    // Extraire les concepts des sources citées
-    const concepts = this.extractConceptsFromSources(message.sources);
-    
-    // Créer les nœuds
-    this.createMindMapNodes(concepts);
-    
-    // Créer les connexions
-    this.createMindMapConnections();
-    
-    this.isGenerating = false;
-  }
-
-  private extractConceptsFromSources(sources: RagSource[]): string[] {
-    const concepts: string[] = [];
-    
-    sources.forEach(source => {
-      // Extraire les mots-clés du texte de la source
-      const text = source.text || '';
-      const words = text.split(/\s+/)
-        .filter(word => word.length > 3)
-        .filter(word => !/^(the|and|or|but|in|on|at|to|for|of|with|by)$/i.test(word))
-        .slice(0, 3); // Limiter à 3 concepts par source
-      
-      concepts.push(...words);
-    });
-
-    // Déduplication et limitation
-    return [...new Set(concepts)].slice(0, 10);
-  }
-
-  private createMindMapNodes(concepts: string[]): void {
-    if (!this.canvas) return;
-
-    const centerX = this.canvas.width / 2;
-    const centerY = this.canvas.height / 2;
-    const radius = Math.min(this.canvas.width, this.canvas.height) / 3;
-
-    concepts.forEach((concept, index) => {
-      const angle = (index / concepts.length) * 2 * Math.PI;
-      const x = centerX + Math.cos(angle) * radius;
-      const y = centerY + Math.sin(angle) * radius;
-
-      this.mindMapNodes.push({
-        id: `node-${index}`,
-        text: concept,
-        x,
-        y,
-        level: index === 0 ? 0 : 1,
-        sourceIds: [],
-        connections: []
-      });
-    });
-  }
-
-  private createMindMapConnections(): void {
-    // Connecter les nœuds proches
-    for (let i = 0; i < this.mindMapNodes.length; i++) {
-      for (let j = i + 1; j < this.mindMapNodes.length; j++) {
-        const node1 = this.mindMapNodes[i];
-        const node2 = this.mindMapNodes[j];
-        
-        const distance = Math.sqrt(
-          Math.pow(node1.x - node2.x, 2) + Math.pow(node1.y - node2.y, 2)
-        );
-
-        if (distance < 200) {
-          this.mindMapConnections.push({
-            from: node1.id,
-            to: node2.id,
-            strength: 1 - (distance / 200)
-          });
-        }
-      }
-    }
-  }
-
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onCanvasClick(event: MouseEvent): void {
-    // Gérer les clics sur les nœuds
-    const rect = this.canvas!.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    const clickedNode = this.mindMapNodes.find(node => {
-      const distance = Math.sqrt(Math.pow(node.x - x, 2) + Math.pow(node.y - y, 2));
-      return distance < 30;
-    });
-
-    if (clickedNode) {
-      console.log('Node clicked:', clickedNode.text);
-      // Ici on pourrait ajouter une action, comme rechercher ce concept
-    }
+    // Handle node clicks if needed
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onCanvasMouseMove(event: MouseEvent): void {
-    // Gérer le hover des nœuds
-    if (this.canvas) {
-      this.canvas.style.cursor = 'default';
-      
-      const rect = this.canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-
-      const hoveredNode = this.mindMapNodes.find(node => {
-        const distance = Math.sqrt(Math.pow(node.x - x, 2) + Math.pow(node.y - y, 2));
-        return distance < 30;
-      });
-
-      if (hoveredNode) {
-        this.canvas.style.cursor = 'pointer';
-      }
-    }
+    // Handle node hovers if needed
   }
 
   exportMindMap(): void {
-    const mindMapData = {
-      nodes: this.mindMapNodes,
-      connections: this.mindMapConnections,
-      generatedAt: new Date().toISOString()
-    };
-
-    const blob = new Blob([JSON.stringify(mindMapData, null, 2)], {
-      type: 'application/json'
-    });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `mindmap-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ nodes: this.mindMapNodes, connections: this.mindMapConnections }, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "mindmap.json");
+    document.body.appendChild(downloadAnchorNode); // Required for Firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
   }
 
-  // Podcast Methods
+  // Podcast Logic
   togglePodcastPlayback(): void {
-    if (this.isPlaying) {
-      this.audioService.pause();
-      this.isPaused = true;
-    } else {
-      if (this.isPaused) {
-        this.audioService.resume();
-        this.isPaused = false;
+    if (this.podcastScript) {
+      if (this.isPlaying) {
+        this.audioService.pause();
+        this.isPaused = true;
       } else {
-        this.audioService.speak(this.podcastScript, {
-          rate: this.playbackSpeed,
-          pitch: 1,
-          volume: 1
-        });
+        this.audioService.play(this.podcastScript, this.playbackSpeed);
+        this.isPaused = false;
       }
     }
   }
 
   stopPodcast(): void {
     this.audioService.stop();
+    this.isPlaying = false;
     this.isPaused = false;
     this.currentTime = 0;
   }
 
   updatePlaybackSpeed(): void {
-    this.audioService.setRate(this.playbackSpeed);
+    this.audioService.setPlaybackSpeed(this.playbackSpeed);
   }
 
   formatDuration(seconds: number): string {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
   }
 
-  // Actions Methods
+  // Actions Logic
   async generateSummary(): Promise<void> {
-    if (!this.lastChatMessage) return;
-
+    if (!this.lastChatMessage || this.isGenerating) return;
     this.isGenerating = true;
+    this.generatedContent = '';
     this.generatedContentType = 'Summary';
 
     try {
-      const prompt = `Create a concise summary of the following response:\n\n${this.lastChatMessage.content}`;
-      const response = await this.ragService.askQuestion(prompt).toPromise();
-      
+      const response = await this.ragService.askQuestion(`Summarize the following content: ${this.lastChatMessage.content}`, 1).toPromise();
       if (response) {
         this.generatedContent = response.answer;
-        this.activeTab = 'actions';
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      console.error('Error generating summary:', error);
+      // console.error('Error generating summary:', error);
+      this.generatedContent = 'Failed to generate summary.';
     } finally {
       this.isGenerating = false;
     }
   }
 
   async generateActionPlan(): Promise<void> {
-    if (!this.lastChatMessage) return;
-
+    if (!this.lastChatMessage || this.isGenerating) return;
     this.isGenerating = true;
+    this.generatedContent = '';
     this.generatedContentType = 'Action Plan';
 
     try {
-      const prompt = `Create a structured action plan with numbered steps based on this response:\n\n${this.lastChatMessage.content}`;
-      const response = await this.ragService.askQuestion(prompt).toPromise();
-      
+      const response = await this.ragService.askQuestion(`Create an action plan based on the following content: ${this.lastChatMessage.content}`, 1).toPromise();
       if (response) {
         this.generatedContent = response.answer;
-        this.activeTab = 'actions';
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      console.error('Error generating action plan:', error);
+      // console.error('Error generating action plan:', error);
+      this.generatedContent = 'Failed to generate action plan.';
     } finally {
       this.isGenerating = false;
     }
   }
 
   async generateFlashcards(): Promise<void> {
-    if (!this.lastChatMessage) return;
-
+    if (!this.lastChatMessage || this.isGenerating) return;
     this.isGenerating = true;
+    this.generatedContent = '';
     this.generatedContentType = 'Flashcards';
 
     try {
-      const prompt = `Create study flashcards in Q&A format from this content:\n\n${this.lastChatMessage.content}`;
-      const response = await this.ragService.askQuestion(prompt).toPromise();
-      
+      const response = await this.ragService.askQuestion(`Generate flashcards (question: answer format) from the key concepts in the following content: ${this.lastChatMessage.content}`, 1).toPromise();
       if (response) {
         this.generatedContent = response.answer;
-        this.activeTab = 'actions';
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      console.error('Error generating flashcards:', error);
+      // console.error('Error generating flashcards:', error);
+      this.generatedContent = 'Failed to generate flashcards.';
     } finally {
       this.isGenerating = false;
     }
   }
 
   async generatePodcast(): Promise<void> {
-    if (!this.lastChatMessage) return;
-
+    if (!this.lastChatMessage || this.isGenerating) return;
     this.isGenerating = true;
+    this.podcastScript = '';
+    this.podcastTitle = 'Generated Podcast';
 
     try {
-      const prompt = `Convert this response into a natural podcast script with conversational tone:\n\n${this.lastChatMessage.content}`;
-      const response = await this.ragService.askQuestion(prompt).toPromise();
-      
+      const response = await this.ragService.askQuestion(`Generate a podcast script from the following content: ${this.lastChatMessage.content}`, 1).toPromise();
       if (response) {
         this.podcastScript = response.answer;
-        this.podcastTitle = `Podcast: ${new Date().toLocaleDateString()}`;
-        this.activeTab = 'podcast';
+        // Automatically play the podcast after generation
+        this.togglePodcastPlayback();
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      console.error('Error generating podcast:', error);
+      // console.error('Error generating podcast:', error);
+      this.podcastScript = 'Failed to generate podcast script.';
     } finally {
       this.isGenerating = false;
     }
   }
 
-  async copyContent(): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(this.generatedContent);
-    } catch (error) {
-      console.error('Error copying content:', error);
+  copyContent(): void {
+    if (this.generatedContent) {
+      navigator.clipboard.writeText(this.generatedContent).then(() => {
+          // Optionally, show a success message
+        // eslint-disable-next-line no-console
+        console.log('Content copied to clipboard!');
+      }).catch(err => {
+        console.error('Failed to copy content:', err);
+      });
     }
   }
 
   exportContent(): void {
-    const blob = new Blob([this.generatedContent], {
-      type: 'text/markdown'
-    });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${this.generatedContentType.toLowerCase().replace(' ', '-')}-${new Date().toISOString().split('T')[0]}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    if (this.generatedContent) {
+      const dataStr = "data:text/markdown;charset=utf-8," + encodeURIComponent(this.generatedContent);
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", `${this.generatedContentType.toLowerCase().replace(/ /g, '-')}.md`);
+      document.body.appendChild(downloadAnchorNode); // Required for Firefox
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+    }
   }
 }
+

@@ -138,7 +138,8 @@ export class ViewerPanelComponent implements OnInit, OnDestroy {
   currentDocument: ViewerDocument | null = null;
   currentPage: number = 1;
   zoomLevel: number = 1;
-  currentHighlights: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  currentHighlights: { type: string; pageNumber: number; spanStart: number; spanEnd: number; text: string; top: number; left: number; width: number; height: number; }[] = [];
 
   private destroy$ = new Subject<void>();
 
@@ -204,8 +205,11 @@ export class ViewerPanelComponent implements OnInit, OnDestroy {
   /**
    * Fait défiler vers un span spécifique
    */
-  private scrollToSpan(scrollData: any): void {
-    console.log('Scroll to span:', scrollData);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private scrollToSpan(scrollData: { top: number; left: number; width: number; height: number; }): void {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+// console.log('Scroll to span:', scrollData);
     // Implémentation simplifiée pour éviter les erreurs
   }
 

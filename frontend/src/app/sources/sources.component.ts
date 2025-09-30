@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DocumentsService, Document, PaginatedDocuments } from '../services/documents.service';
-import { IngestService, UploadResult, PaginatedChunks } from '../services/ingest.service';
+import { IngestService, PaginatedChunks } from '../services/ingest.service';
 import { UploadComponent } from './upload.component';
 
 @Component({
@@ -41,7 +41,9 @@ import { UploadComponent } from './upload.component';
                     (click)="refreshDocuments()"
                     class="p-2 text-gray-600 hover:text-black transition-colors"
                     data-testid="refresh-button"
+                    aria-label="Actualiser les documents"
                   >
+                    <span class="sr-only">Actualiser les documents</span>
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
@@ -55,6 +57,7 @@ import { UploadComponent } from './upload.component';
                     (change)="applyFilters()"
                     class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
                     data-testid="mime-filter"
+                    aria-label="Filtrer par type de document"
                   >
                     <option value="">Tous les types</option>
                     <option value="application/pdf">PDF</option>
@@ -70,6 +73,7 @@ import { UploadComponent } from './upload.component';
                     placeholder="Rechercher..."
                     class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
                     data-testid="search-input"
+                    aria-label="Rechercher des documents"
                   />
                 </div>
               </div>
@@ -116,6 +120,7 @@ import { UploadComponent } from './upload.component';
                           (click)="viewChunks(doc)"
                           class="text-black hover:text-gray-700 font-medium"
                           [attr.data-testid]="'view-chunks-' + doc.id"
+                          [attr.aria-label]="'Voir les chunks du document ' + doc.title"
                         >
                           Voir chunks
                         </button>
@@ -175,9 +180,16 @@ import { UploadComponent } from './upload.component';
         <div *ngIf="selectedDocument" 
              class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
              (click)="closeChunksModal()"
+             (keydown.enter)="closeChunksModal()"
+             role="button"
+             tabindex="0"
              data-testid="chunks-modal">
           <div class="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[80vh] flex flex-col"
-               (click)="$event.stopPropagation()">
+               (click)="$event.stopPropagation()"
+               (keydown.enter)="$event.stopPropagation()"
+               role="dialog"
+               aria-modal="true"
+               tabindex="-1">
             <div class="p-6 border-b border-gray-200">
               <div class="flex justify-between items-center">
                 <h3 class="text-lg font-semibold text-black">
@@ -187,6 +199,7 @@ import { UploadComponent } from './upload.component';
                   (click)="closeChunksModal()"
                   class="text-gray-400 hover:text-gray-600"
                   data-testid="close-modal"
+                  aria-label="Fermer le modal"
                 >
                   <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -236,12 +249,13 @@ import { UploadComponent } from './upload.component';
 export class SourcesComponent implements OnInit {
   documents: Document[] = [];
   filteredDocuments: Document[] = [];
-  pagination: any = null;
+  pagination: PaginatedDocuments['pagination'] | null = null;
   selectedMimeFilter = '';
   searchQuery = '';
   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   selectedDocument: Document | null = null;
-  chunks: any[] = [];
+  chunks: PaginatedChunks["chunks"] = [];
   loadingChunks = false;
   
   totalDocuments = 0;
@@ -264,8 +278,8 @@ export class SourcesComponent implements OnInit {
         this.applyFilters();
         this.calculateTotals();
       },
-      error: (error) => {
-        console.error('Error loading documents:', error);
+      error: () => {
+        // console.error("Error loading documents:", error);
       }
     });
   }
@@ -292,7 +306,8 @@ export class SourcesComponent implements OnInit {
     this.totalChunks = this.documents.reduce((sum, doc) => sum + doc.chunks_count, 0);
   }
 
-  onUploadComplete(result: UploadResult): void {
+  onUploadComplete(): void {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     this.refreshDocuments();
   }
 
@@ -316,8 +331,8 @@ export class SourcesComponent implements OnInit {
         this.chunks = result.chunks;
         this.loadingChunks = false;
       },
-      error: (error) => {
-        console.error('Error loading chunks:', error);
+      error: () => {
+        // console.error(\'Error loading chunks:\', error);
         this.loadingChunks = false;
       }
     });
@@ -332,7 +347,7 @@ export class SourcesComponent implements OnInit {
     return doc.id;
   }
 
-  trackByChunkId(index: number, chunk: any): string {
+  trackByChunkId(index: number, chunk: PaginatedChunks['chunks'][number]): string {
     return chunk.id;
   }
 

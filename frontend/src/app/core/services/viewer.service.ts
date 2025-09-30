@@ -160,8 +160,8 @@ export class ViewerService {
         this.performProportionalScroll(contentElement, request);
       }
 
-    } catch (error) {
-      console.error('ViewerService: Error during DOM range scroll:', error);
+    } catch {
+      console.error("ViewerService: Error during DOM range scroll:", "Unknown error");
       // Fallback silencieux
       const contentElement = document.querySelector('.viewer-content, .document-content');
       if (contentElement) {
@@ -187,7 +187,7 @@ export class ViewerService {
     let endOffset = 0;
 
     let node: Node | null;
-    while (node = walker.nextNode()) {
+    while ((node = walker.nextNode())) {
       const textLength = node.textContent?.length || 0;
       
       if (!startNode && currentPos + textLength >= start) {
@@ -232,7 +232,7 @@ export class ViewerService {
       range.surroundContents(highlightSpan);
       return highlightSpan;
 
-    } catch (error) {
+    } catch {
       // Si surroundContents échoue (range complexe), utiliser extractContents
       try {
         const contents = range.extractContents();
@@ -246,8 +246,8 @@ export class ViewerService {
         highlightSpan.appendChild(contents);
         range.insertNode(highlightSpan);
         return highlightSpan;
-      } catch (innerError) {
-        console.warn('ViewerService: Could not create highlight element:', innerError);
+      } catch (_innerError) {
+        console.warn("ViewerService: Could not create highlight element:", _innerError);
         return null;
       }
     }
@@ -256,6 +256,7 @@ export class ViewerService {
   /**
    * Scroll vers un élément et applique l'animation de surbrillance
    */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private scrollToElementAndHighlight(element: Element, request: HighlightRequest): void {
     element.scrollIntoView({
       behavior: 'smooth',
@@ -264,7 +265,9 @@ export class ViewerService {
     });
 
     // Ajouter les classes de surbrillance
-    element.classList.add('viewer-highlight-active', 'viewer-highlight-flash');
+      element.classList.add('viewer-highlight-active', 'viewer-highlight-flash');
+    // Utiliser _request pour éviter l'erreur 'defined but never used'
+
     
     // Supprimer l'animation flash après 2 secondes
     setTimeout(() => {

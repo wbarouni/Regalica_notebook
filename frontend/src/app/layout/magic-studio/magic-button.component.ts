@@ -49,6 +49,6 @@ import { CommonModule } from '@angular/common';
 })
 export class MagicButtonComponent {
   toggleMagicStudio(): void {
-    console.log('Magic Studio toggled');
+
   }
 }

@@ -83,8 +83,7 @@ export interface DocumentFilter {
 
 // Types pour la pagination
 export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
+  items: T[]; total: number;
   page: number;
   pageSize: number;
   totalPages: number;
@@ -131,7 +130,7 @@ export interface ExportOptions {
 
 export interface ActionResult {
   success: boolean;
-  data?: any;
+  data?: unknown;
   error?: string;
   downloadUrl?: string;
 }
@@ -175,7 +174,7 @@ export interface NotificationAction {
 // Types pour les événements SSE
 export interface SSEEvent {
   type: 'token' | 'source' | 'complete' | 'error';
-  data: any;
+  data: unknown;
 }
 
 export interface SSETokenEvent extends SSEEvent {
