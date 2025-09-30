@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://your-backend-url.com/api/$1"
+      "destination": "https://your-backend-url.com/api/$1" // COMMENTÉ: L'URL du backend doit être définie ici une fois le backend déployé.
     }
   ],
   "routes": [
@@ -23,3 +23,4 @@
     }
   ]
 }
+
