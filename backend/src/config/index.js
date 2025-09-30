@@ -31,13 +31,20 @@ const config = {
 
   // Microservices
   rerankerApiUrl: process.env.RERANKER_API_URL || 'http://reranker:8000',
+  embedderApiUrl: process.env.EMBEDDER_API_URL || 'http://embedder:8000',
   llmApiUrl: process.env.LLM_API_URL || 'http://ollama:11434',
   llmModelName: process.env.LLM_MODEL_NAME || 'qwen2:7b-instruct',
+
+  // Mode de fonctionnement des microservices (docker ou process-local)
+  mode: {
+    reranker: process.env.RERANKER_MODE || 'docker',
+    embedder: process.env.EMBEDDER_MODE || 'docker',
+  },
 
   // URL Configuration
   backendExternalUrl: process.env.BACKEND_EXTERNAL_URL || '',
   frontendExternalUrl: process.env.FRONTEND_EXTERNAL_URL || '',
-  corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:4200',
+  corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS || (process.env.NODE_ENV === 'production' ? 'https://*.vercel.app' : 'http://localhost:4200'),
 };
 
 // Validation
@@ -58,3 +65,4 @@ if (!config.embedApiUrl || !config.embedModelName) {
 }
 
 module.exports = config;
+
