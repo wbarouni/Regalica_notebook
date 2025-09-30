@@ -1,25 +1,20 @@
 {
   "version": 2,
   "name": "regalica-notebook",
-  "buildCommand": "cd frontend && npm ci && npm run build --prod",
-  "outputDirectory": "frontend/dist/regalica-frontend",
-  "installCommand": "cd frontend && npm ci",
-  "rewrites": [
+  "builds": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://your-backend-url.com/api/$1"
+      "src": "frontend/package.json",
+      "use": "@vercel/angular",
+      "config": {
+        "distDir": "frontend/dist/regalica-frontend"
+      }
     }
   ],
   "routes": [
-    {
-      "src": "/(.*\\.(js|css|ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot))",
-      "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
-      }
-    },
     {
       "src": "/(.*)",
       "dest": "/index.html"
     }
   ]
 }
+
