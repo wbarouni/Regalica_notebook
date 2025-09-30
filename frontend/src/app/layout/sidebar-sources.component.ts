@@ -36,7 +36,7 @@ import { ViewerService } from '../core/services/viewer.service';
       <!-- Upload Panel -->
       <div class="upload-panel" [class.expanded]="showUpload">
         <app-upload-dropzone 
-          (uploadComplete)="onUploadComplete($event)"
+          (uploadComplete)="onUploadComplete()"
           (uploadError)="onUploadError($event)">
         </app-upload-dropzone>
       </div>
@@ -68,7 +68,7 @@ import { ViewerService } from '../core/services/viewer.service';
         <!-- Type Filter -->
         <div class="filter-group">
           <label class="filter-label" for="typeFilter">Type</label>
-          <select [(ngModel)]="filters.type"
+          <select [(ngModel)]="filters.mimeType"
                   (ngModelChange)="onFilterChange()"
                   class="filter-select"
                   id="typeFilter">

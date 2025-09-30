@@ -222,7 +222,7 @@ export class RagService {
     while ((match = citationRegex.exec(text)) !== null) {
       citations.push({
         title: match[1],
-        page: match[2],
+        page: parseInt(match[2]),
         span: match[3],
         citation: match[0]
       });

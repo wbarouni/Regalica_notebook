@@ -149,8 +149,8 @@ import { AppConfigService } from '../core/services/app-config.service';
                     <span class="message-timestamp">
                       {{ formatTime(message.timestamp) }}
                     </span>
-                    <span *ngIf="message.processingTimeMs" class="processing-time">
-                      {{ formatProcessingTime(message.processingTimeMs) }}
+                    <span *ngIf="message.processing_time_ms" class="processing-time">
+                      {{ formatProcessingTime(message.processing_time_ms) }}
                     </span>
                   </div>
                   
@@ -323,7 +323,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.currentQuery = '';
     try {
       await this.ragService.chatWithRag(query);
-    } catch {
+    } catch (error: any) {
       // Gérer l'erreur ici si nécessaire, par exemple en affichant un message à l'utilisateur
       this.connectionStatus = 'disconnected';
       
@@ -382,8 +382,8 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch {
-      console.error("Failed to export chat:", __);
+    } catch (error: any) {
+      console.error("Failed to export chat:", error);
       alert("Failed to export chat history.");
     }
   }
@@ -416,7 +416,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
     try {
       await navigator.clipboard.writeText(message.content);
       // TODO: Afficher une notification de succès
-    } catch {
+    } catch (error: any) {
       console.error('Error copying message:', error);
     }
   }
@@ -526,7 +526,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
         const element = this.messagesContainer.nativeElement;
         element.scrollTop = element.scrollHeight;
       }
-    } catch {
+    } catch (error: any) {
       // L'erreur est intentionnellement ignorée ici pour éviter de bloquer le défilement.
     }
   }
