@@ -68,7 +68,7 @@ import { ViewerService } from '../core/services/viewer.service';
         <!-- Type Filter -->
         <div class="filter-group">
           <label class="filter-label">Type</label>
-          <select [(ngModel)]="filters.type"
+          <select [(ngModel)]="filters.mimeType"
                   (ngModelChange)="onFilterChange()"
                   class="filter-select">
             <option value="">All types</option>
@@ -342,6 +342,7 @@ export class SidebarSourcesComponent implements OnInit, OnDestroy {
         this.viewerService.loadDocument({
           id: doc.id,
           title: doc.title,
+          content: content.content, // Ajouter la propriété content
           pages: (content.pages || []).map(page => ({
             ...page,
             spans: []
