@@ -8,13 +8,12 @@ Ce document vous guide à travers les étapes d'installation, de configuration e
 
 Avant de commencer, assurez-vous d'avoir les outils suivants installés sur votre machine :
 
-- **Docker & Docker Compose** : Pour la gestion des conteneurs.
-- **Node.js & npm** : Pour la gestion des dépendances et l'exécution des scripts (version LTS recommandée).
-- **Angular CLI** : L'interface de ligne de commande pour Angular (`npm install -g @angular/cli@17`).
-- **curl** & **jq** : Utilitaires de ligne de commande pour les requêtes HTTP et le traitement JSON.
-- **Git** : Pour le versionnement du code.
+-   **Docker & Docker Compose** : Pour la gestion des conteneurs.
+-   **Node.js & npm** : Pour la gestion des dépendances et l'exécution des scripts (version LTS recommandée).
+-   **Angular CLI** : L'interface de ligne de commande pour Angular (`npm install -g @angular/cli@17`).
+-   **Git** : Pour le versionnement du code.
 
-## Démarrage Rapide (10 Étapes)
+## Démarrage Rapide
 
 Suivez ces étapes pour lancer l'application en environnement de développement local.
 
@@ -45,15 +44,15 @@ Suivez ces étapes pour lancer l'application en environnement de développement 
     *Cette opération peut prendre plusieurs minutes, en fonction de votre connexion internet pour le téléchargement des modèles.*
 
 5.  **Accédez au Frontend** :
-    Ouvrez votre navigateur et allez à l'adresse suivante : [http://localhost:4200](http://localhost:4200). Vous devriez voir la page d'accueil "Regalica Notebook JS – Skeleton OK".
+    Ouvrez votre navigateur et allez à l'adresse suivante : [http://localhost:4200](http://localhost:4200). Vous devriez voir la page d'accueil de l'application.
 
 6.  **Vérifiez le Backend** :
     Accédez à l'endpoint de healthcheck du backend pour confirmer qu'il est opérationnel : [http://localhost:8080/health/ready](http://localhost:8080/health/ready). Vous devriez voir `{"status":"ready"}`.
 
 7.  **Explorez les services** :
-    - **PostgreSQL** est accessible sur le port `5432`.
-    - **Redis** est accessible sur le port `6379`.
-    - **Ollama API** est accessible sur [http://localhost:11434](http://localhost:11434).
+    -   **PostgreSQL** est accessible sur le port `5432`.
+    -   **Redis** est accessible sur le port `6379`.
+    -   **Ollama API** est accessible sur [http://localhost:11434](http://localhost:11434).
 
 8.  **Arrêtez l'environnement** :
     Pour arrêter tous les conteneurs :
@@ -75,40 +74,39 @@ Suivez ces étapes pour lancer l'application en environnement de développement 
 
 ## Dépannage
 
-- **Erreurs de port** : Si vous avez des erreurs `port is already allocated`, assurez-vous qu'aucun autre service ne tourne sur les ports utilisés (4200, 8080, 5432, 6379, 11434).
-- **Manque de RAM** : Le service Ollama et les modèles de langage peuvent être gourmands en mémoire. Assurez-vous d'allouer suffisamment de RAM à Docker (8 Go ou plus est recommandé).
-- **Problèmes de proxy** : Si vous êtes derrière un proxy d'entreprise, vous devrez peut-être configurer Docker et npm pour l'utiliser.
+-   **Erreurs de port** : Si vous avez des erreurs `port is already allocated`, assurez-vous qu'aucun autre service ne tourne sur les ports utilisés (4200, 8080, 5432, 6379, 11434).
+-   **Manque de RAM** : Le service Ollama et les modèles de langage peuvent être gourmands en mémoire. Assurez-vous d'allouer suffisamment de RAM à Docker (8 Go ou plus est recommandé).
+-   **Problèmes de proxy** : Si vous êtes derrière un proxy d'entreprise, vous devrez peut-être configurer Docker et npm pour l'utiliser.
 
 ## Contribution et CI
 
 Ce projet utilise une intégration continue (CI) avec GitHub Actions pour garantir la qualité et la stabilité du code. Toutes les contributions doivent être soumises via une Pull Request (PR).
 
-- **Politique de PR** : La branche `main` est protégée. Chaque PR doit passer les vérifications suivantes : `denylist`, `build`, et `e2e`.
-- **Conventions de commit** : Nous suivons les [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/). Veuillez vous référer au fichier `CONTRIBUTING.md` pour plus de détails.
-- **Workflow CI** : Vous pouvez consulter l'état des actions de CI dans l'onglet "Actions" du repository GitHub.
+-   **Politique de PR** : La branche `main` est protégée. Chaque PR doit passer les vérifications suivantes : `denylist`, `build`, et `e2e`.
+-   **Conventions de commit** : Nous suivons les [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/). Veuillez vous référer au fichier `CONTRIBUTING.md` pour plus de détails.
+-   **Workflow CI** : Vous pouvez consulter l'état des actions de CI dans l'onglet "Actions" du repository GitHub.
 
 ## Licence
 
 Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
 
+## Architecture des Composants
 
-
-
-## Bloc 3 : Pipeline RAG Avancée
+### Bloc 3 : Pipeline RAG Avancée
 
 Le Bloc 3 implémente une pipeline RAG (Retrieval-Augmented Generation) complète avec les fonctionnalités suivantes :
-- **Microservice Reranker** : Un microservice Python basé sur FastAPI et le modèle `BGE-reranker-v2-m3` pour réordonner les candidats.
-- **Génération de Réponse** : Utilisation d'Ollama avec le modèle `qwen2:7b-instruct` pour générer des réponses avec citations obligatoires.
-- **Détection de Langue** : Détection automatique de la langue de la requête (fr, en, ar).
-- **Interface Chat** : Une interface utilisateur Angular complète avec affichage des citations, score de confiance et temps de traitement.
+-   **Microservice Reranker** : Un microservice Python basé sur FastAPI et le modèle `BGE-reranker-v2-m3` pour réordonner les candidats.
+-   **Génération de Réponse** : Utilisation d'Ollama avec le modèle `qwen2:7b-instruct` pour générer des réponses avec citations obligatoires.
+-   **Détection de Langue** : Détection automatique de la langue de la requête (fr, en, ar).
+-   **Interface Chat** : Une interface utilisateur Angular complète avec affichage des citations, score de confiance et temps de traitement.
 
-## Bloc 2: Pipeline d'Ingestion
+### Bloc 2: Pipeline d'Ingestion
 
-### Variables d'Environnement
+#### Variables d'Environnement
 
 Le Bloc 2 introduit une configuration complète via des variables d'environnement. Référez-vous au fichier `.env.example` pour la liste complète des variables requises.
 
-### Commandes
+#### Commandes
 
 -   **Lancer l'environnement Docker :**
     ```bash
@@ -130,29 +128,27 @@ Le Bloc 2 introduit une configuration complète via des variables d'environnemen
     ./scripts/bench_ingest.sh <path_to_file>
     ```
 
-### Chemins d'API
+#### Chemins d'API
 
 -   `POST /ingest/upload` : Uploader un document.
 -   `GET /ingest/:docId/chunks` : Récupérer les chunks d'un document.
 -   `GET /docs` : Lister les documents.
 
-### Codes d'Erreur
+#### Codes d'Erreur
 
 -   `400 UNSUPPORTED_MIME` : Type de fichier non supporté.
 -   `400 NO_FILE` : Aucun fichier fourni.
 -   `500 INTERNAL_ERROR` : Erreur interne du serveur.
 
-
-
-### Microservice Embedder
+#### Microservice Embedder
 
 Le Bloc 2 inclut un microservice Python dédié à la génération d'embeddings réels utilisant des modèles open source.
 
 **Modèles supportés :**
-- `intfloat/multilingual-e5-large` (1024 dim) - **défaut**
-- `nomic-ai/nomic-embed-text-v1.5` (768 dim)
-- `sentence-transformers/all-MiniLM-L6-v2` (384 dim)
-- `intfloat/e5-large-v2` (1024 dim)
+-   `intfloat/multilingual-e5-large` (1024 dim) - **défaut**
+-   `nomic-ai/nomic-embed-text-v1.5` (768 dim)
+-   `sentence-transformers/all-MiniLM-L6-v2` (384 dim)
+-   `intfloat/e5-large-v2` (1024 dim)
 
 **Configuration :**
 Pour changer de modèle, modifiez la variable `EMBED_MODEL_NAME` dans votre fichier `.env` :
@@ -161,9 +157,9 @@ EMBED_MODEL_NAME=nomic-ai/nomic-embed-text-v1.5
 ```
 
 **Endpoints internes :**
-- `GET /health` : Vérification de santé
-- `GET /info` : Informations sur le modèle
-- `POST /embed` : Génération d'embeddings
+-   `GET /health` : Vérification de santé
+-   `GET /info` : Informations sur le modèle
+-   `POST /embed` : Génération d'embeddings
 
 Le microservice n'est pas exposé publiquement et n'est accessible qu'au backend via le réseau Docker interne.
 
@@ -172,22 +168,23 @@ Le microservice n'est pas exposé publiquement et n'est accessible qu'au backend
 Le projet est conçu pour être déployé sur différentes plateformes cloud avec une architecture modulaire.
 
 **Architecture :**
-- **Frontend Angular** : Application statique (build avec `ng build`)
-- **Backend Express.js** : API REST avec endpoints `/health/ready`, `/ingest/*`, `/rag/*`
-- **Microservices Python** : Services indépendants (embedder, reranker)
-- **Base de données** : PostgreSQL avec extension pgvector
+-   **Frontend Angular** : Application statique (build avec `ng build`)
+-   **Backend Express.js** : API REST avec endpoints `/health/ready`, `/ingest/*`, `/rag/*`
+-   **Microservices Python** : Services indépendants (embedder, reranker)
+-   **Base de données** : PostgreSQL avec extension pgvector
 
 **Configuration :**
-- Variables d'environnement définies dans `.env.example`
-- Configuration CORS pour les origines autorisées
-- URLs configurables pour les microservices externes
+-   Variables d'environnement définies dans `.env.example`
+-   Configuration CORS pour les origines autorisées
+-   URLs configurables pour les microservices externes
 
 **Développement local :**
 ```bash
 # Lancer avec Docker Compose
 make up
 
-# Ou manuellement
+# Ou manuellement (nécessite une configuration manuelle des dépendances comme PostgreSQL, Redis, Ollama)
 npm start --prefix frontend
 npm start --prefix backend
 ```
+
