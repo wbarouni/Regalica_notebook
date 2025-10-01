@@ -36,6 +36,7 @@ export interface RagSource {
   spanEnd: number;
   text: string;
   chunkId?: string;
+  confidence?: number;
 }
 
 export interface RagAnswerResponse {
@@ -72,7 +73,7 @@ export interface ChatMessage {
   providedIn: 'root'
 })
 export class RagService {
-  private readonly apiUrl = `${environment.apiBaseUrl}/rag`;
+  private readonly apiUrl = '/api/rag'; // L'intercepteur ajoutera automatiquement l'URL de base
   private messagesSubject = new BehaviorSubject<ChatMessage[]>([]);
   public messages$ = this.messagesSubject.asObservable();
   
@@ -221,10 +222,13 @@ export class RagService {
     
     while ((match = citationRegex.exec(text)) !== null) {
       citations.push({
+        id: `citation-${citations.length}`,
         title: match[1],
+        text: match[3],
         page: parseInt(match[2]),
-        span: match[3],
-        citation: match[0]
+        confidence: 0.8,
+        spanStart: 0,
+        spanEnd: match[3].length
       });
     }
     

@@ -127,9 +127,9 @@ import { AppConfigService } from '../core/services/app-config.service';
                     <div class="sources-list">
                       <button *ngFor="let source of message.sources; trackBy: trackBySourceId"
                               class="source-citation"
-                              [class]="'confidence-' + getConfidenceLevel(source.confidence)"
+                              [class]="'confidence-' + getConfidenceLevel(source.confidence || 0)"
                               (click)="onCitationClick(source)"
-                              [title]="'Confidence: ' + formatConfidence(source.confidence)">
+                              [title]="'Confidence: ' + formatConfidence(source.confidence || 0)">
                         <div class="citation-content">
                           <span class="citation-title">{{ source.title }}</span>
                           <span class="citation-location" *ngIf="source.page">
@@ -137,7 +137,7 @@ import { AppConfigService } from '../core/services/app-config.service';
                           </span>
                         </div>
                         <div class="citation-confidence">
-                          {{ formatConfidence(source.confidence) }}
+                          {{ formatConfidence(source.confidence || 0) }}
                         </div>
                       </button>
                     </div>
@@ -369,7 +369,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
         timestamp: msg.timestamp.toISOString(),
         sources: msg.sources || [],
         confidence: msg.confidence,
-        processingTimeMs: msg.processingTimeMs
+        processingTimeMs: msg.processing_time_ms
       }));
       const blob = new Blob([JSON.stringify(chatData, null, 2)], {
         type: 'application/json'

@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiBaseUrl: '', // L'URL du backend sera fournie dynamiquement ou via une variable d'environnement
+  // apiBaseUrl supprimé - sera chargé dynamiquement via /api/config
   maxUploadMb: 100,
   pageSize: 20,
   allowedMimeTypes: [

@@ -619,8 +619,14 @@ export class MagicStudioComponent implements OnInit, OnDestroy, AfterViewInit {
       if (this.isPlaying) {
         this.audioService.pause();
         this.isPaused = true;
+      } else if (this.isPaused) {
+        this.audioService.resume();
+        this.isPaused = false;
       } else {
-        this.audioService.play(this.podcastScript, this.playbackSpeed);
+        this.audioService.speak(this.podcastScript, { 
+          rate: this.playbackSpeed,
+          lang: 'fr-FR'
+        });
         this.isPaused = false;
       }
     }
@@ -634,7 +640,16 @@ export class MagicStudioComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   updatePlaybackSpeed(): void {
-    this.audioService.setPlaybackSpeed(this.playbackSpeed);
+    // Si une lecture est en cours, redémarrer avec la nouvelle vitesse
+    if (this.isPlaying && this.podcastScript) {
+      this.audioService.stop();
+      setTimeout(() => {
+        this.audioService.speak(this.podcastScript, { 
+          rate: this.playbackSpeed,
+          lang: 'fr-FR'
+        });
+      }, 100);
+    }
   }
 
   formatDuration(seconds: number): string {

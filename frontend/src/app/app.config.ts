@@ -11,7 +11,9 @@ import { ApiBaseInterceptor } from './core/interceptors/api-base.interceptor';
  * Factory function pour initialiser la configuration de l'application
  */
 export function initializeApp(appConfig: AppConfigService): () => Promise<void> {
-  return () => appConfig.loadConfig();
+  return async () => {
+    await appConfig.loadConfig();
+  };
 }
 
 export const appConfig: ApplicationConfig = {

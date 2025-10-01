@@ -86,7 +86,7 @@ export interface PaginatedResponse<T> {
   providedIn: 'root'
 })
 export class IngestService {
-  private readonly apiUrl = `${environment.apiBaseUrl}/ingest`;
+  private readonly apiUrl = '/api/ingest'; // L'intercepteur ajoutera automatiquement l'URL de base
 
   constructor(private http: HttpClient) {}
 

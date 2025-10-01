@@ -347,6 +347,7 @@ export class SidebarSourcesComponent implements OnInit, OnDestroy {
         this.viewerService.loadDocument({
           id: doc.id,
           title: doc.title,
+          content: (content.pages || []).map(page => page.content || '').join('\n\n'),
           pages: (content.pages || []).map(page => ({
             ...page,
             spans: []

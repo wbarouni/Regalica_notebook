@@ -94,15 +94,17 @@ export class UploadDropzoneComponent {
   }
 
   onFileSelect(event: Event): void {
-    const files = event.target.files;
+    const target = event.target as HTMLInputElement;
+    const files = target?.files;
     if (files) {
       this.handleFiles(files);
     }
   }
 
-  private handleFiles(): void {
+  private handleFiles(files: FileList): void {
     // Simulation d'upload pour le moment
+    console.log('Files to upload:', files.length);
     
-    this.uploadComplete.emit({ message: 'Upload completed' });
+    this.uploadComplete.emit();
   }
 }

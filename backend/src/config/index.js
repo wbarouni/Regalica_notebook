@@ -37,7 +37,7 @@ const config = {
   // URL Configuration
   backendExternalUrl: process.env.BACKEND_EXTERNAL_URL || '',
   frontendExternalUrl: process.env.FRONTEND_EXTERNAL_URL || '',
-  corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:4200',
+  corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS || '',
 };
 
 // Validation

@@ -96,12 +96,23 @@ function isOriginAllowed(origin, allowedOrigins) {
     return false;
   }
 
-  // Autoriser localhost en développement
-  if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+  // Autoriser localhost uniquement en développement (NODE_ENV !== 'production')
+  if (process.env.NODE_ENV !== 'production' && 
+      (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
     return true;
   }
 
-  return allowedOrigins.includes(origin);
+  // Vérifier les origines explicitement autorisées
+  if (allowedOrigins.includes(origin)) {
+    return true;
+  }
+
+  // Autoriser les domaines Vercel (*.vercel.app)
+  if (origin.endsWith('.vercel.app')) {
+    return true;
+  }
+
+  return false;
 }
 
 /**

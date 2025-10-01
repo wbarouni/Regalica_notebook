@@ -10,25 +10,29 @@ const app = express();
 
 // Configuration CORS avancée
 const allowedOrigins = parseCorsOrigins(config.corsAllowedOrigins);
-logger.info(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
+const isProduction = process.env.NODE_ENV === 'production';
+
+logger.info(`Environment: ${isProduction ? 'production' : 'development'}`);
+logger.info(`CORS allowed origins: ${allowedOrigins.length > 0 ? allowedOrigins.join(', ') : 'none configured'}`);
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Autoriser les requêtes sans origine (ex: Postman, curl)
+    // Autoriser les requêtes sans origine (ex: Postman, curl) uniquement en développement
     if (!origin) {
-      return callback(null, true);
+      return callback(null, !isProduction);
     }
 
     if (isOriginAllowed(origin, allowedOrigins)) {
       callback(null, true);
     } else {
-      logger.warn(`CORS blocked origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      logger.warn(`CORS blocked origin: ${origin} (production: ${isProduction})`);
+      callback(new Error(`CORS policy violation: Origin ${origin} not allowed`));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  optionsSuccessStatus: 200 // Pour supporter les anciens navigateurs
 };
 
 // Middleware
@@ -43,7 +47,33 @@ app.get("/health/ready", (req, res) => {
 
 // Configuration publique (sans secrets)
 app.get("/api/config", (req, res) => {
-  res.json(getPublicUrlConfig(config));
+  // Déterminer l'URL backend dynamiquement
+  let backendBaseUrl = config.backendExternalUrl;
+  
+  if (!backendBaseUrl) {
+    // En production, utiliser l'URL de la requête
+    if (isProduction && req.headers.host) {
+      const protocol = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
+      backendBaseUrl = `${protocol}://${req.headers.host}`;
+    } else {
+      // En développement, utiliser localhost
+      backendBaseUrl = `http://localhost:${config.serverPort}`;
+    }
+  }
+
+  const publicConfig = {
+    backendBaseUrl,
+    maxUploadSizeMb: config.maxUploadMb,
+    features: {
+      mindmap: true,
+      podcast: true,
+      export: true
+    },
+    environment: isProduction ? 'production' : 'development',
+    version: '1.0.0'
+  };
+  
+  res.json(publicConfig);
 });
 
 // Routes d'ingestion

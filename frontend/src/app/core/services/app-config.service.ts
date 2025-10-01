@@ -20,8 +20,8 @@ export class AppConfigService {
   public config$ = this.configSubject.asObservable();
 
   private defaultConfig: PublicConfig = {
-    backendBaseUrl: 'http://localhost:8080',
-    maxUploadSizeMb: 10,
+    backendBaseUrl: '', // Sera déterminé dynamiquement ou via variable d'environnement
+    maxUploadSizeMb: 100,
     features: {
       mindmap: true,
       podcast: true,

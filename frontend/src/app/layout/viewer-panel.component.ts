@@ -123,7 +123,7 @@ import { ViewerService, ViewerDocument } from '../core/services/viewer.service';
         
         <button class="nav-btn"
                 (click)="nextPage()"
-                [disabled]="currentPage === (currentDocument.pages?.length || 0)"
+                [disabled]="currentPage === (currentDocument.pages.length || 0)"
                 title="Next page">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -168,6 +168,20 @@ export class ViewerPanelComponent implements OnInit, OnDestroy {
           this.zoomLevel = 1;
         }
       });
+
+    // Page courante
+    this.viewerService.currentPage$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(page => {
+        this.currentPage = page;
+      });
+
+    // Highlights (pour déclencher le re-rendu du contenu)
+    this.viewerService.highlightedSpans$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        // Le contenu sera automatiquement re-rendu grâce à getHighlightedContent()
+      });
   }
 
   /**
@@ -184,19 +198,33 @@ export class ViewerPanelComponent implements OnInit, OnDestroy {
    * Obtient le contenu avec surbrillance
    */
   getHighlightedContent(content: string): string {
-    // Appliquer les highlights au contenu
+    if (!content) return '';
+
+    // Obtenir les highlights pour la page courante depuis le ViewerService
+    const highlights = this.viewerService.getHighlightsForCurrentPage();
+    
+    if (highlights.length === 0) {
+      return content;
+    }
+
+    // Trier les highlights par position de début (ordre décroissant pour éviter les décalages)
+    const sortedHighlights = highlights.sort((a, b) => b.spanStart - a.spanStart);
+    
     let highlightedContent = content;
     
-    this.currentHighlights.forEach(highlight => {
-      if (highlight.pageNumber === this.currentPage) {
-        const beforeText = highlightedContent.substring(0, highlight.spanStart);
-        const highlightText = highlightedContent.substring(highlight.spanStart, highlight.spanEnd);
-        const afterText = highlightedContent.substring(highlight.spanEnd);
-        
-        highlightedContent = beforeText + 
-          `<mark class="highlight-${highlight.type}">${highlightText}</mark>` + 
-          afterText;
-      }
+    sortedHighlights.forEach(highlight => {
+      const beforeText = highlightedContent.substring(0, highlight.spanStart);
+      const highlightText = highlightedContent.substring(highlight.spanStart, highlight.spanEnd);
+      const afterText = highlightedContent.substring(highlight.spanEnd);
+      
+      // Créer un span avec des attributs data pour faciliter la navigation
+      const highlightHtml = `<span class="citation-highlight" 
+                                   data-span-start="${highlight.spanStart}" 
+                                   data-span-end="${highlight.spanEnd}"
+                                   ${highlight.chunkId ? `data-chunk-id="${highlight.chunkId}"` : ''}
+                                   title="Citation mise en évidence">${highlightText}</span>`;
+      
+      highlightedContent = beforeText + highlightHtml + afterText;
     });
     
     return highlightedContent;
