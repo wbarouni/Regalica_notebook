@@ -280,9 +280,13 @@ export class SidebarSourcesComponent implements OnInit, OnDestroy {
       }).toPromise();
       
       if (response) {
-        this.documents = response.items;
-        this.totalDocuments = response.total;
-        this.totalPages = response.totalPages;
+        this.documents = Array.isArray(response.items) ? response.items : [];
+        this.totalDocuments = typeof response.total === 'number' ? response.total : this.documents.length;
+        this.totalPages = typeof response.totalPages === 'number' ? response.totalPages : 1;
+      } else {
+        this.documents = [];
+        this.totalDocuments = 0;
+        this.totalPages = 1;
       }
     } catch (error) {
       console.error('Failed to load documents:', error);

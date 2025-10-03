@@ -18,7 +18,7 @@ jobs:
         run: docker compose -f deploy/docker/docker-compose.yml up -d --build
       - name: Wait backend
         run: |
-          for i in {1..40}; do curl -fsS http://localhost:8080/health/ready && break; sleep 2; [[ $i -eq 40 ]] && exit 1; done
+          for i in {1..40}; do curl -fsS http://localhost:5200/health/ready && break; sleep 2; [[ $i -eq 40 ]] && exit 1; done
       - name: Smoke
         run: bash scripts/smoke.sh
 ```

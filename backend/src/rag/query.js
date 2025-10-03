@@ -18,23 +18,26 @@ async function embedQuery(query) {
   try {
     logger.info(`[rag/query] Génération embedding pour requête: "${query.substring(0, 100)}..."`);
     
-    const response = await axios.post(`${config.embedApiUrl}/embed`, {
-      texts: [query.trim()]
+    // Use Ollama directly for embeddings
+    const response = await axios.post(`${config.embedApiUrl}/api/embeddings`, {
+      model: 'nomic-embed-text:latest',
+      prompt: query.trim()
     }, {
-      timeout: 10000
+      timeout: 30000
     });
 
-    const { vectors, dim } = response.data;
+    const { embedding } = response.data;
     
-    if (!vectors || vectors.length !== 1) {
+    if (!embedding || !Array.isArray(embedding)) {
       throw new Error('Réponse embedding invalide');
     }
 
     const processingTime = Date.now() - startTime;
+    const dim = embedding.length;
     logger.info(`[rag/query] Embedding généré en ${processingTime}ms, dim=${dim}`);
 
     return {
-      vector: vectors[0],
+      vector: embedding,
       dim: dim
     };
 

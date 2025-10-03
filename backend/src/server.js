@@ -87,6 +87,12 @@ app.use("/api/docs", ingestRoutes);
 const ragRoutes = require("./rag/routes");
 app.use("/api/rag", ragRoutes);
 
+// Dynamic model management routes
+const modelRoutes = require("./rag/model-routes");
+app.use("/api/rag", modelRoutes);
+
+// Agent routes removed per request
+
 // Error handler
 app.use(errorHandler);
 
@@ -103,7 +109,9 @@ const startServer = async () => {
       logger.info(`Log level: ${config.logLevel}`);
       logger.info(`Database schema: ${config.dbSchema}`);
       logger.info(`Max upload size: ${config.maxUploadMb}MB`);
-      logger.info(`Embed model: ${config.embedModel} (dim: ${config.embedDim})`);
+      logger.info(`Embed model: ${config.embedModelName}`);
+      logger.info(`LLM base URL: ${config.llmApiUrl}`);
+      logger.info(`LLM current model: ${config.llmModelName}`);
     });
   } catch (error) {
     logger.error("Failed to start server:", error);

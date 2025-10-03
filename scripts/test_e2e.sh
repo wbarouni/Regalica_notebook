@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-API_URL="http://localhost:8080"
+API_URL="http://localhost:5200"
 TEST_DIR="tests/fixtures"
 
 echo "Starting E2E Tests for Bloc 2 Ingestion Pipeline"

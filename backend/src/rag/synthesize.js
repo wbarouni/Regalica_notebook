@@ -2,6 +2,7 @@ const axios = require('axios');
 const config = require('../config');
 const logger = require('../utils/logger');
 const { detectLanguage } = require('./lang');
+const modelSwitcher = require('./model-switcher');
 
 /**
  * Génère un prompt structuré pour le LLM
@@ -39,7 +40,9 @@ function buildPrompt(query, contextChunks, lang) {
   
   contextChunks.forEach((chunk, index) => {
     const citation = `[${chunk.document_title}#${chunk.page_no || 'p?'}:${chunk.span_start || 0}-${chunk.span_end || 0}]`;
-    contextText += `${index + 1}. ${citation}\n${chunk.text}\n\n`;
+    const text = (chunk.text || '').trim().replace(/\s+/g, ' ');
+    const snippet = text.length > 500 ? text.substring(0, 500) + '…' : text;
+    contextText += `${index + 1}. ${citation}\n${snippet}\n\n`;
   });
 
   // Construire le prompt final
@@ -86,9 +89,10 @@ async function generateAnswer(query, contextChunks, lang = 'en') {
     // Construire le prompt
     const prompt = buildPrompt(query, contextChunks, lang);
     
-    // Appel à Ollama
+    // Appel à Ollama with dynamic model
+    const currentModel = modelSwitcher.currentLLM;
     const response = await axios.post(`${config.llmApiUrl}/api/chat`, {
-      model: config.llmModelName,
+      model: currentModel,
       messages: [
         {
           role: 'user',
@@ -97,12 +101,12 @@ async function generateAnswer(query, contextChunks, lang = 'en') {
       ],
       stream: false,
       options: {
-        temperature: 0.1, // Réponses plus déterministes
+        temperature: 0.1,
         top_p: 0.9,
-        max_tokens: 1000
+        num_predict: config.llmNumPredict
       }
     }, {
-      timeout: 60000 // 1 minute pour la génération
+      timeout: config.llmChatTimeoutMs
     });
 
     const generatedText = response.data.message?.content || '';
@@ -127,7 +131,9 @@ async function generateAnswer(query, contextChunks, lang = 'en') {
 
     // Calculer la confiance basée sur les scores des chunks utilisés
     const avgScore = contextChunks.reduce((sum, chunk) => sum + (chunk.score_final || 0), 0) / contextChunks.length;
-    const citationBonus = Math.min(sources.length / config.ragCitationsMin, 1) * 0.1;
+    const citationBonus = config.ragCitationsMin > 0
+      ? Math.min(sources.length / config.ragCitationsMin, 1) * 0.1
+      : 0;
     const confidence = Math.min(avgScore + citationBonus, 1);
 
     const processingTime = Date.now() - startTime;
@@ -151,7 +157,7 @@ async function generateAnswer(query, contextChunks, lang = 'en') {
       confidence: finalConfidence,
       reasoning: isValidAnswer ? 'Réponse générée avec succès' : `Critères non respectés: citations=${sources.length}/${config.ragCitationsMin}, confiance=${confidence.toFixed(4)}/${config.ragConfidenceThreshold}`,
       processing_time_ms: processingTime,
-      model_used: config.llmModelName,
+      model_used: modelSwitcher.currentLLM,
       lang_detected: lang
     };
 
@@ -169,7 +175,7 @@ async function generateAnswer(query, contextChunks, lang = 'en') {
       confidence: 0,
       reasoning: `Erreur génération: ${error.message}`,
       processing_time_ms: processingTime,
-      model_used: config.llmModelName,
+      model_used: modelSwitcher.currentLLM,
       lang_detected: lang
     };
   }

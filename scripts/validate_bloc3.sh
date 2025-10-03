@@ -28,7 +28,7 @@ log_section() {
 }
 
 # Variables de configuration
-BACKEND_URL="http://localhost:8080"
+BACKEND_URL="http://localhost:5200"
 FRONTEND_URL="http://localhost:4200"
 EMBEDDER_URL="http://localhost:8001"
 RERANKER_URL="http://localhost:8002"

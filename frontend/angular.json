@@ -68,7 +68,8 @@
               "buildTarget": "regalica-frontend:build:production"
             },
             "development": {
-              "buildTarget": "regalica-frontend:build:development"
+              "buildTarget": "regalica-frontend:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"

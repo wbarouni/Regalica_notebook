@@ -19,7 +19,7 @@ async function rerank(query, candidates) {
   }
 
   // Validation stricte du nombre maximum de candidats depuis l'environnement
-  const maxCandidates = config.rerankerMaxCandidates || 100;
+  const maxCandidates = Math.min(config.rerankerMaxCandidates || 100, 8);
   if (candidates.length > maxCandidates) {
     logger.warn(`[rag/rerank] Too many candidates (${candidates.length}), limiting to ${maxCandidates}`);
     candidates = candidates.slice(0, maxCandidates);
@@ -76,7 +76,7 @@ async function rerank(query, candidates) {
       query: query.trim(),
       candidates: candidateTexts
     }, {
-      timeout: 30000 // 30 secondes pour le reranking
+      timeout: config.rerankerTimeoutMs
     });
 
     const { scores, processing_time_ms, model } = response.data;

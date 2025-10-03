@@ -27,7 +27,7 @@ check_service() {
 FAILED=0
 
 check_service "Frontend" "http://localhost:4200/" 15 || FAILED=1
-check_service "Backend" "http://localhost:8080/health/ready" 10 || FAILED=1
+check_service "Backend" "http://localhost:5200/health/ready" 10 || FAILED=1
 
 # Check PostgreSQL
 echo "Verifying PostgreSQL..." | tee -a "$LOGFILE"

@@ -47,7 +47,8 @@ CREATE TABLE IF NOT EXISTS nbk.embeddings (
     chunk_id UUID NOT NULL UNIQUE REFERENCES nbk.chunks(id) ON DELETE CASCADE,
     model TEXT NOT NULL,
     dim INT NOT NULL,
-    vec VECTOR NOT NULL
+    -- Dimension fix: pgvector requires an explicit dimension for IVF indexes
+    vec VECTOR(1024) NOT NULL
 );
 
 -- 7. Créer les index

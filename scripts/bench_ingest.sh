@@ -8,7 +8,7 @@ if [ ! -f "$FILE_PATH" ]; then
   exit 1
 fi
 
-API_URL="http://localhost:8080/ingest/upload"
+API_URL="http://localhost:5200/ingest/upload"
 
 echo "Starting benchmark for: $FILE_PATH"
 

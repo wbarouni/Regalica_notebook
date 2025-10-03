@@ -64,11 +64,28 @@ class EmbedderClient {
     try {
       logger.info(`[embed] Génération embeddings pour ${texts.length} textes`);
       
-      const response = await this.client.post('/embed', {
-        texts: texts
-      });
+      // Use Ollama directly for embeddings
+      const vectors = [];
+      
+      for (const text of texts) {
+        const response = await axios.post(`${this.apiUrl}/api/embeddings`, {
+          model: 'nomic-embed-text:latest',
+          prompt: text.trim()
+        }, {
+          timeout: this.timeout
+        });
 
-      const { vectors, dim, processing_time_ms } = response.data;
+        const { embedding } = response.data;
+        
+        if (!embedding || !Array.isArray(embedding)) {
+          throw new Error('Réponse embedding invalide');
+        }
+        
+        vectors.push(embedding);
+      }
+      
+      const dim = vectors.length > 0 ? vectors[0].length : 0;
+      const processing_time_ms = Date.now() - startTime;
       const totalTime = Date.now() - startTime;
 
       // Validation des embeddings

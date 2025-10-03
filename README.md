@@ -47,7 +47,7 @@ Suivez ces étapes pour lancer l'application en environnement de développement 
     Ouvrez votre navigateur et allez à l'adresse suivante : [http://localhost:4200](http://localhost:4200). Vous devriez voir la page d'accueil de l'application.
 
 6.  **Vérifiez le Backend** :
-    Accédez à l'endpoint de healthcheck du backend pour confirmer qu'il est opérationnel : [http://localhost:8080/health/ready](http://localhost:8080/health/ready). Vous devriez voir `{"status":"ready"}`.
+    Accédez à l'endpoint de healthcheck du backend pour confirmer qu'il est opérationnel : [http://localhost:5200/health/ready](http://localhost:5200/health/ready). Vous devriez voir `{"status":"ready"}`.
 
 7.  **Explorez les services** :
     -   **PostgreSQL** est accessible sur le port `5432`.
@@ -74,7 +74,7 @@ Suivez ces étapes pour lancer l'application en environnement de développement 
 
 ## Dépannage
 
--   **Erreurs de port** : Si vous avez des erreurs `port is already allocated`, assurez-vous qu'aucun autre service ne tourne sur les ports utilisés (4200, 8080, 5432, 6379, 11434).
+-   **Erreurs de port** : Si vous avez des erreurs `port is already allocated`, assurez-vous qu'aucun autre service ne tourne sur les ports utilisés (4200, 5200, 5432, 6379, 11434).
 -   **Manque de RAM** : Le service Ollama et les modèles de langage peuvent être gourmands en mémoire. Assurez-vous d'allouer suffisamment de RAM à Docker (8 Go ou plus est recommandé).
 -   **Problèmes de proxy** : Si vous êtes derrière un proxy d'entreprise, vous devrez peut-être configurer Docker et npm pour l'utiliser.
 

@@ -2,7 +2,7 @@
 :root {
   // Couleurs Light Theme
   --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f9fafb;
+  --color-bg-secondary: #ffffff; /* pure white background like screenshot */
   --color-bg-tertiary: #f3f4f6;
   --color-text-primary: #111827;
   --color-text-secondary: #6b7280;
@@ -36,14 +36,13 @@
 
 // Dark Theme
 [data-theme="dark"] {
-  --color-bg-primary: #111827;
-  --color-bg-secondary: #1f2937;
-  --color-bg-tertiary: #374151;
-  --color-text-primary: #f9fafb;
-  --color-text-secondary: #d1d5db;
-  --color-text-tertiary: #9ca3af;
-  --color-border: #374151;
-  --color-border-hover: #4b5563;
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #ffffff;
+  --color-bg-tertiary: #f7f7f8;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-border: #e5e7eb;
+  --color-border-hover: #d1d5db;
   --color-accent: #f9fafb;
   --color-accent-hover: #e5e7eb;
   
@@ -58,7 +57,7 @@
 .shell-container {
   width: 100vw;
   height: 100vh;
-  background-color: var(--color-bg-secondary);
+  background-color: #ffffff;
   color: var(--color-text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
@@ -266,44 +265,7 @@
   }
 }
 
-// Bouton de changement de thème
-.theme-toggle {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-  border-radius: 50%;
-  box-shadow: var(--shadow-md);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  
-  &:hover {
-    background-color: var(--color-bg-tertiary);
-    border-color: var(--color-border-hover);
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-1px) scale(1.05);
-  }
-  
-  &:active {
-    transform: translateY(0) scale(1);
-  }
-  
-  svg {
-    transition: transform var(--transition-fast);
-  }
-  
-  &:hover svg {
-    transform: rotate(15deg);
-  }
-}
+// Theme toggle removed per request
 
 // Animations d'entrée
 @keyframes slideInFromLeft {

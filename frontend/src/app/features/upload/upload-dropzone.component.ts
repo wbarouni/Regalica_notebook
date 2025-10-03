@@ -1,5 +1,6 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { IngestService } from '../../services/ingest.service';
 
 @Component({
   selector: 'app-upload-dropzone',
@@ -14,15 +15,18 @@ import { CommonModule } from '@angular/common';
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
         </svg>
-        <p class="upload-text">Drop files here or click to upload</p>
+        <p class="upload-text" *ngIf="!isUploading">Drop files here or click to upload</p>
+        <p class="upload-text" *ngIf="isUploading">Uploading...</p>
         <input type="file" 
                #fileInput
                (change)="onFileSelect($event)"
                multiple
                accept=".pdf,.docx,.txt,.html"
-               class="file-input">
-        <button class="upload-btn" (click)="fileInput.click()">
-          Choose Files
+               class="file-input"
+               [disabled]="isUploading">
+        <button class="upload-btn" (click)="fileInput.click()" [disabled]="isUploading">
+          <span *ngIf="!isUploading">Choose Files</span>
+          <span *ngIf="isUploading">Uploading...</span>
         </button>
       </div>
     </div>
@@ -76,6 +80,9 @@ import { CommonModule } from '@angular/common';
 export class UploadDropzoneComponent {
   @Output() uploadComplete = new EventEmitter<void>();
   @Output() uploadError = new EventEmitter<string>();
+  
+  private ingestService = inject(IngestService);
+  isUploading = false;
 
   onDragOver(event: DragEvent): void {
     event.preventDefault();
@@ -102,9 +109,33 @@ export class UploadDropzoneComponent {
   }
 
   private handleFiles(files: FileList): void {
-    // Simulation d'upload pour le moment
+    if (files.length === 0) return;
+    
     console.log('Files to upload:', files.length);
     
-    this.uploadComplete.emit();
+    // Upload each file
+    for (let i = 0; i < files.length; i++) {
+      this.uploadFile(files[i]);
+    }
+  }
+  
+  private uploadFile(file: File): void {
+    if (this.isUploading) return;
+    
+    this.isUploading = true;
+    
+    this.ingestService.uploadDocument(file).subscribe({
+      next: (result) => {
+        console.log('Upload successful:', result);
+        this.isUploading = false;
+        this.uploadComplete.emit();
+      },
+      error: (error) => {
+        console.error('Upload failed:', error);
+        this.isUploading = false;
+        const errorMessage = error.error?.error || error.message || 'Upload failed';
+        this.uploadError.emit(errorMessage);
+      }
+    });
   }
 }

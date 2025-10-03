@@ -23,6 +23,7 @@ import { AppConfigService } from '../core/services/app-config.service';
           </h2>
           
           <div class="header-actions">
+            
             <button class="header-btn"
                     (click)="clearChat()"
                     [disabled]="messages.length === 0"
@@ -255,6 +256,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
   isStreaming: boolean = false;
   connectionStatus: 'connected' | 'connecting' | 'disconnected' = 'connected';
   
+  
   private destroy$ = new Subject<void>();
   private shouldScrollToBottom = false;
   // Exemples de questions
@@ -319,6 +321,8 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (!query || this.isStreaming) {
       return;
     }
+    // Prevent rapid double submits within 1s
+    this.isStreaming = true;
     // Vider le champ de saisie
     this.currentQuery = '';
     try {
@@ -331,6 +335,9 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
       setTimeout(() => {
         this.connectionStatus = 'connected';
       }, 3000);
+    } finally {
+      // Allow sending again
+      setTimeout(() => { this.isStreaming = false; }, 250);
     }
   }
   /**

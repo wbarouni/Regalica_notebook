@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
-import { environment } from '../../environments/environment';
+import { finalize } from 'rxjs/operators';
+// environment import removed; base URL handled by interceptor
 
 export interface RagCandidate {
   chunk_id: string;
@@ -58,6 +59,8 @@ export interface RagAnswerResponse {
   };
 }
 
+// AgentChatResponse removed (agent feature rolled back)
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -74,11 +77,13 @@ export interface ChatMessage {
 })
 export class RagService {
   private readonly apiUrl = '/api/rag'; // L'intercepteur ajoutera automatiquement l'URL de base
+  // Agent API URL removed (agent feature rolled back)
   private messagesSubject = new BehaviorSubject<ChatMessage[]>([]);
   public messages$ = this.messagesSubject.asObservable();
   
   private loadingSubject = new BehaviorSubject<boolean>(false);
   public loading$ = this.loadingSubject.asObservable();
+  private inFlight = false;
 
   constructor(private http: HttpClient) {}
 
@@ -99,18 +104,21 @@ export class RagService {
     const body: { query: string; top_k: number; lang?: string } = { query, top_k: topK };
     if (lang) body.lang = lang;
     
+    if (this.inFlight) {
+      return new Observable<RagAnswerResponse>(subscriber => {
+        subscriber.error(new Error('REQUEST_IN_FLIGHT'));
+      });
+    }
+
+    this.inFlight = true;
     this.loadingSubject.next(true);
-    
-    const request = this.http.post<RagAnswerResponse>(`${this.apiUrl}/answer`, body);
-    
-    // Mettre à jour le loading state quand la requête se termine
-    request.subscribe({
-      next: () => this.loadingSubject.next(false),
-      error: () => { /* Handle error or log it */ this.loadingSubject.next(false); }
-    });
-    
-    return request;
+
+    return this.http
+      .post<RagAnswerResponse>(`${this.apiUrl}/answer`, body)
+      .pipe(finalize(() => { this.loadingSubject.next(false); this.inFlight = false; }));
   }
+
+  // askAgent removed (agent feature rolled back)
 
   /**
    * Ajoute un message utilisateur au chat
@@ -183,6 +191,8 @@ export class RagService {
       );
     }
   }
+
+  // chatWithAgent removed (agent feature rolled back)
 
   /**
    * Efface l'historique des messages

@@ -25,7 +25,8 @@ services:
       timeout: 5s
       retries: 30
       start_period: 10s
-    ports: ["5432:5432"]
+    # Change host port to avoid conflicts with a local Postgres
+    ports: ["5433:5432"]
     restart: unless-stopped
 
   redis:
@@ -51,7 +52,8 @@ services:
       timeout: 5s
       retries: 120
       start_period: 30s
-    ports: ["11434:11434"]
+    # Change host port to avoid conflicts with a locally running Ollama
+    ports: ["11435:11434"]
     restart: unless-stopped
 
   embedder:
@@ -69,6 +71,7 @@ services:
       retries: 10
       start_period: 120s
     restart: unless-stopped
+    ports: ["8000:8000"]
 
   reranker:
     build: ../../reranker
@@ -85,11 +88,12 @@ services:
       retries: 5
       start_period: 90s
     restart: unless-stopped
+    ports: ["8001:8001"]
 
   backend:
     build: ../../backend
     environment:
-      SERVER_PORT: 8080
+      SERVER_PORT: 5200
       LOG_LEVEL: info
       DB_URL: postgres://postgres:postgres@postgres:5432/notebook
       DB_SCHEMA: nbk
@@ -103,12 +107,12 @@ services:
     volumes:
       - uploads:/app/uploads
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health/ready"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:5200/health/ready"]
       interval: 10s
       timeout: 5s
       retries: 30
       start_period: 15s
-    ports: ["8080:8080"]
+    ports: ["5200:5200"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -125,7 +129,7 @@ services:
   frontend:
     build: ../../frontend
     environment:
-      NG_APP_API_BASE_URL: http://localhost:8080
+      NG_APP_API_BASE_URL: http://localhost:5200
       NG_APP_MAX_UPLOAD_MB: 100
       NG_APP_PAGE_SIZE: 20
     healthcheck:
@@ -134,7 +138,8 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-    ports: ["4200:80"]
+    # Use 4300 on host to avoid clashing with local ng serve on 4200
+    ports: ["4300:80"]
     depends_on:
       backend:
         condition: service_healthy

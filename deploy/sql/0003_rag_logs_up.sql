@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS nbk.rag_logs (
 );
 
 COMMENT ON TABLE nbk.rag_logs IS 'Logs des requêtes RAG pour analyse et débogage';
-COMMENT ON COLUMN nbk.rag_logs.query IS 'Requête de l\'utilisateur';
+COMMENT ON COLUMN nbk.rag_logs.query IS 'Requête de l''utilisateur';
 COMMENT ON COLUMN nbk.rag_logs.lang IS 'Langue détectée de la requête';
 COMMENT ON COLUMN nbk.rag_logs.topk IS 'Nombre de candidats récupérés';
 COMMENT ON COLUMN nbk.rag_logs.retrieved IS 'Candidats récupérés (avant reranking)';

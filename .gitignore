@@ -2,4 +2,8 @@
 
 # Angular Cache
 frontend/.angular/cache/
+node_modules/
+dist/
+.env
+*.log
 

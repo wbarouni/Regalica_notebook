@@ -56,7 +56,7 @@ describe('URL Normalization', () => {
   test('should allow localhost origins', () => {
     const allowedOrigins = ['https://example.com'];
     expect(isOriginAllowed('http://localhost:3000', allowedOrigins)).toBe(true);
-    expect(isOriginAllowed('http://127.0.0.1:8080', allowedOrigins)).toBe(true);
+    expect(isOriginAllowed('http://127.0.0.1:5200', allowedOrigins)).toBe(true);
   });
 
   test('should check allowed origins correctly', () => {

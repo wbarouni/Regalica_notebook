@@ -2,7 +2,7 @@ require("dotenv").config({ path: require("path").resolve(__dirname, "../../.env"
 
 const config = {
   // Server configuration
-  serverPort: process.env.SERVER_PORT || 8080,
+  serverPort: process.env.SERVER_PORT || 5200,
   logLevel: process.env.LOG_LEVEL || "info",
 
   // Database configuration
@@ -21,13 +21,16 @@ const config = {
   ocrEnable: process.env.OCR_ENABLE === "true",
 
   // RAG Configuration
-  ragTopK: parseInt(process.env.RAG_TOP_K) || 50,
-  ragCitationsMin: parseInt(process.env.RAG_CITATIONS_MIN) || 2,
-  ragConfidenceThreshold: parseFloat(process.env.RAG_CONFIDENCE_THRESHOLD) || 0.6,
-  rerankerMaxInputChars: parseInt(process.env.RERANKER_MAX_INPUT_CHARS, 10) || 512,
-  rerankerMaxCandidates: parseInt(process.env.RERANKER_MAX_CANDIDATES, 10) || 100,
+  ragTopK: parseInt(process.env.RAG_TOP_K) || 20,
+  ragCitationsMin: parseInt(process.env.RAG_CITATIONS_MIN) || 0,
+  ragConfidenceThreshold: parseFloat(process.env.RAG_CONFIDENCE_THRESHOLD) || 0.3,
+  rerankerMaxInputChars: parseInt(process.env.RERANKER_MAX_INPUT_CHARS, 10) || 180,
+  rerankerMaxCandidates: parseInt(process.env.RERANKER_MAX_CANDIDATES, 10) || 8,
   rerankerAlpha: parseFloat(process.env.RERANKER_ALPHA) || 0.30,
   rerankerBeta: parseFloat(process.env.RERANKER_BETA) || 0.70,
+  rerankerTimeoutMs: parseInt(process.env.RERANKER_TIMEOUT_MS, 10) || 30000,
+  llmChatTimeoutMs: parseInt(process.env.LLM_CHAT_TIMEOUT_MS, 10) || 90000,
+  llmNumPredict: parseInt(process.env.LLM_NUM_PREDICT, 10) || 400,
 
   // Microservices
   rerankerApiUrl: process.env.RERANKER_API_URL || 'http://reranker:8000',

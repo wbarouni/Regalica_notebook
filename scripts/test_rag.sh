@@ -4,7 +4,7 @@ set -euo pipefail
 echo "[test_rag] Tests E2E de la pipeline RAG"
 
 # Configuration
-BACKEND_URL="http://localhost:8080"
+BACKEND_URL="http://localhost:5200"
 TEST_QUERY="Quel est le contenu principal du document ?"
 TOP_K=10
 

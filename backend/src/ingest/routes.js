@@ -133,9 +133,10 @@ router.get("/:docId/chunks", async (req, res, next) => {
 });
 
 /**
- * GET /docs - Liste paginée des documents
+ * GET /documents - Liste paginée des documents
+ * Alias compat: l'ancien chemin "/docs" est toujours supporté
  */
-router.get("/docs", async (req, res, next) => {
+const listDocumentsHandler = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 20;
@@ -161,20 +162,86 @@ router.get("/docs", async (req, res, next) => {
         LIMIT $1 OFFSET $2
       `, [pageSize, offset]);
 
+      // Adapter le format de réponse au frontend (PaginatedResponse<Document>)
+      const items = docsResult.rows.map(row => ({
+        id: row.id,
+        title: row.title,
+        filename: row.title,
+        mimeType: row.mime,
+        size: Number(row.bytes),
+        status: 'ready',
+        uploadedAt: row.created_at,
+        processedAt: row.created_at,
+        chunksCount: Number(row.chunks_count) || 0
+      }));
+
       res.json({
-        documents: docsResult.rows,
-        pagination: {
-          page,
-          pageSize,
-          total,
-          totalPages: Math.ceil(total / pageSize)
-        }
+        items,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize)
       });
 
     } finally {
       client.release();
     }
 
+  } catch (error) {
+    next(error);
+  }
+};
+
+router.get("/documents", listDocumentsHandler);
+router.get("/docs", listDocumentsHandler);
+
+/**
+ * GET /documents/:docId/content - Contenu textuel agrégé pour l'aperçu
+ * Retourne un résumé textuel concaténé des chunks pour affichage rapide côté UI
+ */
+router.get("/documents/:docId/content", async (req, res, next) => {
+  try {
+    const { docId } = req.params;
+
+    const client = await pool.connect();
+    try {
+      // Document metadata
+      const docResult = await client.query(
+        `SELECT id, title, mime, bytes, created_at FROM ${config.dbSchema}.documents WHERE id = $1`,
+        [docId]
+      );
+
+      if (docResult.rowCount === 0) {
+        return res.status(404).json({ error: "DOCUMENT_NOT_FOUND" });
+      }
+
+      // Prefer real pages if present
+      const pagesResult = await client.query(
+        `SELECT page_no, text FROM ${config.dbSchema}.pages WHERE document_id = $1 ORDER BY page_no`,
+        [docId]
+      );
+
+      let pages = pagesResult.rows.map(r => ({ number: Number(r.page_no), content: r.text || "" }));
+
+      if (pages.length === 0) {
+        // Fallback: aggregate chunk text as a single page preview
+        const chunksResult = await client.query(
+          `SELECT text FROM ${config.dbSchema}.chunks WHERE document_id = $1 ORDER BY seq LIMIT 200`,
+          [docId]
+        );
+        const joined = chunksResult.rows.map(r => r.text || "").join("\n\n");
+        const maxLen = 20000; // 20 KB to keep response light
+        const content = joined.length > maxLen ? joined.slice(0, maxLen) + "…" : joined;
+        pages = [{ number: 1, content }];
+      }
+
+      res.json({
+        document: docResult.rows[0],
+        pages
+      });
+    } finally {
+      client.release();
+    }
   } catch (error) {
     next(error);
   }

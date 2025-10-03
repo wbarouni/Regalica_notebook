@@ -11,6 +11,6 @@ RUN npm ci --only=production
 # Copier le code source
 COPY . .
 
-EXPOSE 8080
+EXPOSE 5200
 # Démarrer l'application (un seul CMD)
 CMD ["node", "src/server.js"]
