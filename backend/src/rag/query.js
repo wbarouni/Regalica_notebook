@@ -18,22 +18,21 @@ async function embedQuery(query) {
   try {
     logger.info(`[rag/query] Génération embedding pour requête: "${query.substring(0, 100)}..."`);
     
-    // Use Ollama directly for embeddings
-    const response = await axios.post(`${config.embedApiUrl}/api/embeddings`, {
-      model: 'nomic-embed-text:latest',
-      prompt: query.trim()
+    // Use embedder microservice
+    const response = await axios.post(`${config.embedApiUrl}/embed`, {
+      texts: [query.trim()]
     }, {
       timeout: 30000
     });
 
-    const { embedding } = response.data;
+    const { vectors, dim } = response.data;
+    const embedding = vectors[0];
     
     if (!embedding || !Array.isArray(embedding)) {
       throw new Error('Réponse embedding invalide');
     }
 
     const processingTime = Date.now() - startTime;
-    const dim = embedding.length;
     logger.info(`[rag/query] Embedding généré en ${processingTime}ms, dim=${dim}`);
 
     return {
@@ -57,9 +56,10 @@ async function embedQuery(query) {
  * Récupère les candidats les plus similaires via recherche vectorielle
  * @param {number[]} embedding - Le vecteur de la requête
  * @param {number} topK - Nombre de candidats à récupérer
+ * @param {Object} options - Options de filtrage (minScore, docIds, etc.)
  * @returns {Promise<Array>} - Liste des candidats avec métadonnées
  */
-async function retrieveCandidates(embedding, topK = 50) {
+async function retrieveCandidates(embedding, topK = 50, options = {}) {
   if (!embedding || !Array.isArray(embedding)) {
     throw new Error('Embedding invalide');
   }
@@ -67,6 +67,8 @@ async function retrieveCandidates(embedding, topK = 50) {
   if (topK <= 0 || topK > 200) {
     throw new Error('topK doit être entre 1 et 200');
   }
+  
+  const { minScore = 0.1, docIds = null } = options;
 
   const startTime = Date.now();
   const client = await pool.connect();
@@ -74,11 +76,15 @@ async function retrieveCandidates(embedding, topK = 50) {
   try {
     logger.info(`[rag/query] Recherche des ${topK} meilleurs candidats`);
 
-    // Requête SQL avec similarité cosinus (1 - cosine_distance)
-    const query = `
+    // Formater l'embedding pour pgvector: '[1,2,3,...]'
+    const vectorStr = `[${embedding.join(',')}]`;
+
+    // Requête SQL avec similarité cosinus et filtres optionnels
+    // Cast text to vector since vec column is stored as text
+    let query = `
       SELECT 
         c.id as chunk_id,
-        c.document_id,
+        c.document_id as document_id,
         c.text,
         c.tokens,
         c.heading_path,
@@ -89,41 +95,71 @@ async function retrieveCandidates(embedding, topK = 50) {
         d.mime as document_mime,
         d.bytes as document_bytes,
         d.created_at as document_created_at,
-        (1 - (e.vec <=> $1::vector)) as score_cosine
+        (1 - (e.vec::vector <=> $1::vector)) as score_cosine
       FROM ${config.dbSchema}.chunks c
       JOIN ${config.dbSchema}.documents d ON c.document_id = d.id
       JOIN ${config.dbSchema}.embeddings e ON c.id = e.chunk_id
-      ORDER BY e.vec <=> $1::vector
+      WHERE (1 - (e.vec::vector <=> $1::vector)) >= $3
+    `;
+    
+    const params = [vectorStr, topK, minScore];
+    
+    // Filtrer par documents spécifiques si demandé
+    if (docIds && Array.isArray(docIds) && docIds.length > 0) {
+      query += ` AND c.document_id = ANY($4::uuid[])`;
+      params.push(docIds);
+    }
+    
+    query += `
+      ORDER BY e.vec::vector <=> $1::vector
       LIMIT $2
     `;
 
-    const result = await client.query(query, [JSON.stringify(embedding), topK]);
+    const result = await client.query(query, params);
     
-    const candidates = result.rows.map(row => ({
-      chunk_id: row.chunk_id,
-      document_id: row.document_id,
-      text: row.text,
-      tokens: row.tokens,
-      heading_path: row.heading_path,
-      span_start: row.span_start,
-      span_end: row.span_end,
-      page_no: row.page_no,
-      document_title: row.document_title,
-      document_mime: row.document_mime,
-      document_bytes: row.document_bytes,
-      document_created_at: row.document_created_at,
-      score_cosine: parseFloat(row.score_cosine)
-    }));
+    // Mapper et enrichir les candidats
+    const candidates = result.rows.map(row => {
+      const score = parseFloat(row.score_cosine);
+      
+      return {
+        chunk_id: row.chunk_id,
+        document_id: row.document_id,
+        text: row.text,
+        tokens: row.tokens,
+        heading_path: row.heading_path,
+        span_start: row.span_start,
+        span_end: row.span_end,
+        page_no: row.page_no,
+        document_title: row.document_title,
+        document_mime: row.document_mime,
+        document_bytes: row.document_bytes,
+        document_created_at: row.document_created_at,
+        score_cosine: score,
+        // Indicateurs de qualité
+        has_heading: !!row.heading_path,
+        has_page: !!row.page_no,
+        text_length: row.text ? row.text.length : 0,
+        quality_score: score * (row.heading_path ? 1.05 : 1) * (row.page_no ? 1.03 : 1)
+      };
+    });
+    
+    // Filtrer uniquement les candidats vides
+    const qualityCandidates = candidates.filter(c => 
+      c.text_length >= 10 && c.score_cosine >= minScore
+    );
 
     const processingTime = Date.now() - startTime;
-    logger.info(`[rag/query] ${candidates.length} candidats récupérés en ${processingTime}ms`);
+    logger.info(`[rag/query] ${qualityCandidates.length}/${result.rows.length} candidats de qualité récupérés en ${processingTime}ms`);
     
-    if (candidates.length > 0) {
-      const scores = candidates.map(c => c.score_cosine);
+    if (qualityCandidates.length > 0) {
+      const scores = qualityCandidates.map(c => c.score_cosine);
+      const qualityScores = qualityCandidates.map(c => c.quality_score);
       logger.info(`[rag/query] Scores cosinus: min=${Math.min(...scores).toFixed(4)}, max=${Math.max(...scores).toFixed(4)}, avg=${(scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(4)}`);
+      logger.info(`[rag/query] Scores qualité: min=${Math.min(...qualityScores).toFixed(4)}, max=${Math.max(...qualityScores).toFixed(4)}`);
+      logger.info(`[rag/query] Candidats avec heading: ${qualityCandidates.filter(c => c.has_heading).length}, avec page: ${qualityCandidates.filter(c => c.has_page).length}`);
     }
 
-    return candidates;
+    return qualityCandidates;
 
   } catch (error) {
     const processingTime = Date.now() - startTime;

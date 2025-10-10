@@ -1,0 +1,77 @@
+<div class="notebook-manager">
+  <!-- Header -->
+  <header class="manager-header">
+    <h1 class="header-title">Notebooks</h1>
+    
+    <div class="header-actions">
+      <button class="btn-primary" (click)="showCreateModal()">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        Nouveau Notebook
+      </button>
+    </div>
+  </header>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="(notebooks$ | async)?.length === 0">
+    <div class="empty-icon">📁</div>
+    <h2 class="empty-title">Aucun notebook</h2>
+    <p class="empty-description">Créez votre premier notebook pour commencer</p>
+    <button class="btn-secondary" (click)="showCreateModal()">
+      Créer un notebook
+    </button>
+  </div>
+
+  <!-- Grid -->
+  <div class="notebooks-grid" *ngIf="(notebooks$ | async)?.length! > 0">
+    <app-notebook-card
+      *ngFor="let notebook of notebooks$ | async; trackBy: trackByNotebookId"
+      [notebook]="notebook"
+      (cardClick)="openNotebook(notebook)"
+      (deleteClick)="deleteNotebook(notebook, $event)">
+    </app-notebook-card>
+  </div>
+
+  <!-- Create Modal -->
+  <div class="modal-overlay" *ngIf="showNewModal" (click)="hideCreateModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <h2 class="modal-title">Nouveau Notebook</h2>
+      
+      <form #createForm="ngForm" (ngSubmit)="createNotebook(titleInput.value, descInput.value); createForm.reset()">
+        <div class="form-group">
+          <label for="title">Titre</label>
+          <input 
+            #titleInput
+            type="text" 
+            id="title" 
+            name="title"
+            class="form-input"
+            placeholder="Mon notebook de recherche"
+            required
+            autofocus>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description (optionnel)</label>
+          <textarea 
+            #descInput
+            id="description" 
+            name="description"
+            class="form-textarea"
+            rows="3"
+            placeholder="Notes sur ce projet..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="hideCreateModal()">
+            Annuler
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="!createForm.valid">
+            Créer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

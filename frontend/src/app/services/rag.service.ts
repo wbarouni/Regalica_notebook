@@ -38,6 +38,13 @@ export interface RagSource {
   text: string;
   chunkId?: string;
   confidence?: number;
+  // Additional properties from backend
+  score?: number;
+  index?: number;
+  document_id?: string;
+  span_start?: number;
+  span_end?: number;
+  chunk_id?: string;
 }
 
 export interface RagAnswerResponse {
@@ -161,35 +168,92 @@ export class RagService {
   }
 
   /**
+   * Pose une question avec streaming SSE
+   */
+  async chatWithRagStreaming(query: string, topK: number = 50): Promise<void> {
+    this.addUserMessage(query);
+    
+    const messageId = this.generateMessageId();
+    let fullAnswer = '';
+    let sources: RagSource[] = [];
+    let confidence = 0;
+    
+    // Message assistant temporaire
+    const tempMessage: ChatMessage = {
+      id: messageId,
+      role: 'assistant',
+      content: '...',
+      timestamp: new Date()
+    };
+    
+    const currentMessages = this.messagesSubject.value;
+    this.messagesSubject.next([...currentMessages, tempMessage]);
+    
+    this.inFlight = true;
+    this.loadingSubject.next(true);
+    
+    try {
+      const response = await fetch(`${this.apiUrl}/answer/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, top_k: topK })
+      });
+      
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      
+      if (!reader) throw new Error('No reader');
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = JSON.parse(line.slice(6));
+            
+            if (data.type === 'token') {
+              fullAnswer += data.text;
+              this.updateMessage(messageId, fullAnswer, sources, confidence);
+            } else if (data.type === 'done') {
+              fullAnswer = data.answer;
+              sources = data.sources || [];
+              confidence = data.confidence || 0;
+              this.updateMessage(messageId, fullAnswer, sources, confidence);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Streaming error:', error);
+      this.updateMessage(messageId, 'Erreur lors du streaming', [], 0);
+    } finally {
+      this.loadingSubject.next(false);
+      this.inFlight = false;
+    }
+  }
+
+  /**
+   * Met à jour un message existant
+   */
+  private updateMessage(id: string, content: string, sources: RagSource[], confidence: number): void {
+    const messages = this.messagesSubject.value;
+    const index = messages.findIndex(m => m.id === id);
+    if (index !== -1) {
+      messages[index] = { ...messages[index], content, sources, confidence };
+      this.messagesSubject.next([...messages]);
+    }
+  }
+
+  /**
    * Pose une question complète (ajoute les messages et fait l'appel API)
    */
   async chatWithRag(query: string, topK: number = 50, lang?: string): Promise<void> {
-    // Ajouter le message utilisateur
-    this.addUserMessage(query);
-    
-    try {
-      // Faire l'appel API
-      const response = await this.askQuestion(query, topK, lang).toPromise() as RagAnswerResponse;
-      
-      if (response) {
-        // Ajouter la réponse de l'assistant
-        this.addAssistantMessage(
-          response.answer,
-          response.sources,
-          response.confidence,
-          response.stats
-        );
-      }
-    } catch (error) {
-      console.error('Erreur lors de la question RAG:', error);
-      
-      // Ajouter un message d'erreur
-      this.addAssistantMessage(
-        'Désolé, une erreur est survenue lors du traitement de votre question. Veuillez réessayer.',
-        [],
-        0
-      );
-    }
+    // Utiliser streaming
+    return this.chatWithRagStreaming(query, topK);
   }
 
   // chatWithAgent removed (agent feature rolled back)

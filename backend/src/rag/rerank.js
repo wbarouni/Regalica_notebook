@@ -19,16 +19,24 @@ async function rerank(query, candidates) {
   }
 
   // Validation stricte du nombre maximum de candidats depuis l'environnement
-  const maxCandidates = Math.min(config.rerankerMaxCandidates || 100, 8);
+  const maxCandidates = config.rerankerMaxCandidates || 8;
   if (candidates.length > maxCandidates) {
-    logger.warn(`[rag/rerank] Too many candidates (${candidates.length}), limiting to ${maxCandidates}`);
-    candidates = candidates.slice(0, maxCandidates);
+    logger.warn(`[rag/rerank] Too many candidates (${candidates.length}), limiting to top ${maxCandidates} by cosine score`);
+    // Trier par score cosinus avant de limiter pour garder les meilleurs
+    candidates = candidates
+      .sort((a, b) => (b.score_cosine || 0) - (a.score_cosine || 0))
+      .slice(0, maxCandidates);
   }
 
-  // Validation des candidats vides
+  // Validation minimale des candidats
   const validCandidates = candidates.filter(candidate => {
     if (!candidate || !candidate.text || candidate.text.trim().length === 0) {
       logger.debug('[rag/rerank] Skipping empty candidate');
+      return false;
+    }
+    // Accepter tous les candidats avec un minimum de texte
+    if (candidate.text.trim().length < 10) {
+      logger.debug('[rag/rerank] Skipping too short candidate');
       return false;
     }
     return true;
@@ -85,29 +93,70 @@ async function rerank(query, candidates) {
       throw new Error(`Réponse reranker invalide: ${scores?.length} scores pour ${candidates.length} candidats`);
     }
 
-    // Combiner les scores cosinus et rerank avec pondération configurables
+    // Combiner les scores avec pondération adaptative
     const alpha = config.rerankerAlpha; // Poids du score cosinus
     const beta = config.rerankerBeta;   // Poids du score rerank
     
-    const rerankedCandidates = candidates.map((candidate, index) => ({
-      ...candidate,
-      score_rerank: scores[index],
-      score_final: alpha * candidate.score_cosine + beta * scores[index]
-    }));
+    // Normaliser les scores rerank pour éviter les biais
+    const maxRerankScore = Math.max(...scores);
+    const minRerankScore = Math.min(...scores);
+    const rerankRange = maxRerankScore - minRerankScore;
+    
+    const rerankedCandidates = candidates.map((candidate, index) => {
+      // Normalisation du score rerank si nécessaire
+      const normalizedRerankScore = rerankRange > 0 
+        ? (scores[index] - minRerankScore) / rerankRange
+        : scores[index];
+      
+      // Score final avec pondération
+      const scoreFinal = alpha * candidate.score_cosine + beta * normalizedRerankScore;
+      
+      // Bonus si le chunk contient des mots-clés de la query (simple matching)
+      const queryTokens = query.toLowerCase().split(/\s+/).filter(t => t.length > 3);
+      const textLower = candidate.text.toLowerCase();
+      const keywordMatches = queryTokens.filter(token => textLower.includes(token)).length;
+      const keywordBonus = Math.min(keywordMatches * 0.02, 0.1);
+      
+      return {
+        ...candidate,
+        score_rerank: scores[index],
+        score_rerank_normalized: normalizedRerankScore,
+        score_final: Math.min(scoreFinal + keywordBonus, 1),
+        keyword_matches: keywordMatches
+      };
+    });
 
     // Trier par score final décroissant
     rerankedCandidates.sort((a, b) => b.score_final - a.score_final);
 
     const processingTime = Date.now() - startTime;
     
-    // Statistiques de logging
+    // Statistiques de logging avec écart-type
     const rerankScores = scores;
     const finalScores = rerankedCandidates.map(c => c.score_final);
     
+    // Calcul écart-type rerank
+    const rerankMean = rerankScores.reduce((a, b) => a + b, 0) / rerankScores.length;
+    const rerankVariance = rerankScores.reduce((a, b) => a + Math.pow(b - rerankMean, 2), 0) / rerankScores.length;
+    const rerankStdDev = Math.sqrt(rerankVariance);
+    
+    // Calcul écart-type final
+    const finalMean = finalScores.reduce((a, b) => a + b, 0) / finalScores.length;
+    const finalVariance = finalScores.reduce((a, b) => a + Math.pow(b - finalMean, 2), 0) / finalScores.length;
+    const finalStdDev = Math.sqrt(finalVariance);
+    
     logger.info(`[rag/rerank] Réordonnancement terminé en ${processingTime}ms (reranker: ${processing_time_ms}ms)`);
     logger.info(`[rag/rerank] Modèle utilisé: ${model}`);
-    logger.info(`[rag/rerank] Scores rerank: min=${Math.min(...rerankScores).toFixed(4)}, max=${Math.max(...rerankScores).toFixed(4)}, avg=${(rerankScores.reduce((a, b) => a + b, 0) / rerankScores.length).toFixed(4)}`);
-    logger.info(`[rag/rerank] Scores finaux: min=${Math.min(...finalScores).toFixed(4)}, max=${Math.max(...finalScores).toFixed(4)}, avg=${(finalScores.reduce((a, b) => a + b, 0) / finalScores.length).toFixed(4)}`);
+    logger.info(`[rag/rerank] Scores rerank: min=${Math.min(...rerankScores).toFixed(4)}, max=${Math.max(...rerankScores).toFixed(4)}, avg=${rerankMean.toFixed(4)}, std=${rerankStdDev.toFixed(4)}`);
+    logger.info(`[rag/rerank] Scores finaux: min=${Math.min(...finalScores).toFixed(4)}, max=${Math.max(...finalScores).toFixed(4)}, avg=${finalMean.toFixed(4)}, std=${finalStdDev.toFixed(4)}`);
+    
+    // Alertes si distribution anormale
+    if (Math.max(...rerankScores) < 0.15) {
+      logger.warn(`[rag/rerank] ⚠️ All rerank scores < 0.15 - model may be miscalibrated for this content`);
+    }
+    if (rerankStdDev < 0.02) {
+      logger.warn(`[rag/rerank] ⚠️ Very low variance (${rerankStdDev.toFixed(4)}) - rerank scores are too similar`);
+    }
 
     return rerankedCandidates;
 
@@ -119,13 +168,28 @@ async function rerank(query, candidates) {
       logger.error(`[rag/rerank] Réponse API: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
     }
 
-    // En cas d'erreur, retourner les candidats avec seulement le score cosinus
-    logger.warn('[rag/rerank] Fallback: utilisation des scores cosinus uniquement');
-    return candidates.map(candidate => ({
-      ...candidate,
-      score_rerank: 0,
-      score_final: candidate.score_cosine
-    }));
+    // En cas d'erreur, fallback intelligent avec score cosinus + heuristiques
+    logger.warn('[rag/rerank] Fallback: utilisation des scores cosinus avec heuristiques');
+    
+    const queryTokens = query.toLowerCase().split(/\s+/).filter(t => t.length > 3);
+    
+    return candidates.map(candidate => {
+      const textLower = candidate.text.toLowerCase();
+      const keywordMatches = queryTokens.filter(token => textLower.includes(token)).length;
+      const keywordBonus = Math.min(keywordMatches * 0.03, 0.15);
+      
+      // Bonus pour les documents récents ou avec metadata riche
+      const metadataBonus = (candidate.heading_path ? 0.02 : 0) + 
+                           (candidate.page_no ? 0.01 : 0);
+      
+      return {
+        ...candidate,
+        score_rerank: 0,
+        score_final: Math.min(candidate.score_cosine + keywordBonus + metadataBonus, 1),
+        keyword_matches: keywordMatches,
+        fallback_mode: true
+      };
+    }).sort((a, b) => b.score_final - a.score_final);
   }
 }
 

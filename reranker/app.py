@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configuration
-RERANKER_MODEL_NAME = os.getenv('RERANKER_MODEL_NAME', 'BAAI/bge-reranker-v2-m3')
+RERANKER_MODEL_NAME = os.getenv('RERANKER_MODEL_NAME', 'cross-encoder/ms-marco-MiniLM-L-6-v2')
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 8001))
 

@@ -128,9 +128,11 @@ import { AppConfigService } from '../core/services/app-config.service';
                     <div class="sources-list">
                       <button *ngFor="let source of message.sources; trackBy: trackBySourceId"
                               class="source-citation"
-                              [class]="'confidence-' + getConfidenceLevel(source.confidence || 0)"
+                              [class]="'confidence-' + getConfidenceLevel(source.score || source.confidence || 0)"
+                              [attr.data-source-index]="source.index"
                               (click)="onCitationClick(source)"
-                              [title]="'Confidence: ' + formatConfidence(source.confidence || 0)">
+                              [title]="'Confidence: ' + formatConfidence(source.score || source.confidence || 0)">
+                        <div class="citation-number" *ngIf="source.index">[{{ source.index }}]</div>
                         <div class="citation-content">
                           <span class="citation-title">{{ source.title }}</span>
                           <span class="citation-location" *ngIf="source.page">
@@ -138,7 +140,7 @@ import { AppConfigService } from '../core/services/app-config.service';
                           </span>
                         </div>
                         <div class="citation-confidence">
-                          {{ formatConfidence(source.confidence || 0) }}
+                          {{ formatConfidence(source.score || source.confidence || 0) }}
                         </div>
                       </button>
                     </div>
@@ -270,7 +272,10 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
     private ragService: RagService,
     private viewerService: ViewerService,
     private appConfig: AppConfigService
-  ) {}
+  ) {
+    // Exposer la méthode pour les citations inline
+    (window as any).scrollToCitation = this.scrollToCitationByIndex.bind(this);
+  }
   ngOnInit(): void {
     this.setupSubscriptions();
     this.loadChatHistory();
@@ -396,15 +401,40 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   /**
+   * Clique sur une citation inline [1], [2], etc.
+   */
+  scrollToCitationByIndex(index: number): void {
+    // Trouver le dernier message assistant
+    const lastAssistantMessage = [...this.messages].reverse().find(m => m.role === 'assistant');
+    if (!lastAssistantMessage || !lastAssistantMessage.sources) return;
+    
+    // Trouver la source correspondante
+    const source = lastAssistantMessage.sources.find(s => s.index === index);
+    if (source) {
+      this.onCitationClick(source);
+      
+      // Scroll vers la section sources
+      setTimeout(() => {
+        const sourceElement = document.querySelector(`[data-source-index="${index}"]`);
+        if (sourceElement) {
+          sourceElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          sourceElement.classList.add('citation-highlight');
+          setTimeout(() => sourceElement.classList.remove('citation-highlight'), 2000);
+        }
+      }, 100);
+    }
+  }
+
+  /**
    * Clique sur une citation - déclenche le scroll et la surbrillance dans le viewer
    */
   onCitationClick(source: RagSource): void {
     this.viewerService.scrollToSpan(
-      source.id,
+      source.document_id || source.id,
       source.page,
-      source.spanStart,
-      source.spanEnd,
-      source.chunkId
+      source.span_start || source.spanStart,
+      source.span_end || source.spanEnd,
+      source.chunk_id || source.chunkId
     );
 
     const citationElement = document.querySelector(`[data-source-id="${source.id}"][data-span-start="${source.spanStart}"]`);
@@ -442,13 +472,14 @@ export class ChatPanelComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
   /**
-   * Formate le contenu d'un message (support basique du markdown)
+   * Formate le contenu d'un message (support basique du markdown + citations cliquables)
    */
   formatMessageContent(content: string): string {
     return content
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/`(.*?)`/g, '<code>$1</code>')
+      .replace(/\[(\d+)\]/g, '<span class="inline-citation" data-citation="$1" onclick="window.scrollToCitation($1)">[$1]</span>')
       .replace(/\n/g, '<br>');
   }
   /**

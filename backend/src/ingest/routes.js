@@ -157,7 +157,7 @@ const listDocumentsHandler = async (req, res, next) => {
           COUNT(c.id) as chunks_count
         FROM ${config.dbSchema}.documents d
         LEFT JOIN ${config.dbSchema}.chunks c ON d.id = c.document_id
-        GROUP BY d.id, d.title, d.mime, d.bytes, d.created_at
+        GROUP BY d.id
         ORDER BY d.created_at DESC
         LIMIT $1 OFFSET $2
       `, [pageSize, offset]);
@@ -196,6 +196,81 @@ router.get("/documents", listDocumentsHandler);
 router.get("/docs", listDocumentsHandler);
 
 /**
+ * DELETE /documents/:docId - Supprime un document et toutes ses données associées
+ */
+router.delete("/documents/:docId", async (req, res, next) => {
+  try {
+    const { docId } = req.params;
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // Vérifier que le document existe
+      const docCheck = await client.query(
+        `SELECT id FROM ${config.dbSchema}.documents WHERE id = $1`,
+        [docId]
+      );
+
+      if (docCheck.rowCount === 0) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ error: "DOCUMENT_NOT_FOUND" });
+      }
+
+      // Supprimer dans l'ordre pour respecter les contraintes FK:
+      // 1. Embeddings (référencent chunks)
+      await client.query(
+        `DELETE FROM ${config.dbSchema}.embeddings 
+         WHERE chunk_id IN (SELECT id FROM ${config.dbSchema}.chunks WHERE document_id = $1)`,
+        [docId]
+      );
+
+      // 2. Chunks
+      await client.query(
+        `DELETE FROM ${config.dbSchema}.chunks WHERE document_id = $1`,
+        [docId]
+      );
+
+      // 3. Pages
+      await client.query(
+        `DELETE FROM ${config.dbSchema}.pages WHERE document_id = $1`,
+        [docId]
+      );
+
+      // 4. Notebook bindings (si table existe)
+      try {
+        await client.query(
+          `DELETE FROM ${config.dbSchema}.notebook_documents WHERE document_id = $1`,
+          [docId]
+        );
+      } catch (e) {
+        // Table might not exist, ignore
+      }
+
+      // 5. Document lui-même
+      await client.query(
+        `DELETE FROM ${config.dbSchema}.documents WHERE id = $1`,
+        [docId]
+      );
+
+      await client.query("COMMIT");
+
+      logger.info(`Document deleted: ${docId}`);
+      res.json({ success: true, id: docId });
+
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * GET /documents/:docId/content - Contenu textuel agrégé pour l'aperçu
  * Retourne un résumé textuel concaténé des chunks pour affichage rapide côté UI
  */
@@ -226,7 +301,7 @@ router.get("/documents/:docId/content", async (req, res, next) => {
       if (pages.length === 0) {
         // Fallback: aggregate chunk text as a single page preview
         const chunksResult = await client.query(
-          `SELECT text FROM ${config.dbSchema}.chunks WHERE document_id = $1 ORDER BY seq LIMIT 200`,
+        `SELECT text FROM ${config.dbSchema}.chunks WHERE document_id = $1 ORDER BY seq LIMIT 200`,
           [docId]
         );
         const joined = chunksResult.rows.map(r => r.text || "").join("\n\n");
@@ -325,10 +400,12 @@ const persistDocument = async ({ title, mime, bytes, sha256, extractionResult, c
     const embeddingResult = await generateEmbeddings(chunksWithIds);
     
     for (const embedding of embeddingResult.embeddings) {
+      // Format vector as pgvector string: '[1,2,3,...]'
+      const vectorStr = `[${embedding.vector.join(',')}]`;
       await client.query(`
         INSERT INTO ${config.dbSchema}.embeddings (chunk_id, model, dim, vec)
-        VALUES ($1, $2, $3, $4)
-      `, [embedding.chunk_id, embeddingResult.model_info.name, embedding.dim, JSON.stringify(embedding.vector)]);
+        VALUES ($1, $2, $3, $4::vector)
+      `, [embedding.chunk_id, embeddingResult.model_info.name, embedding.dim, vectorStr]);
     }
     
     const embedTime = Date.now() - embedStart;

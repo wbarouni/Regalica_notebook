@@ -20,22 +20,48 @@ const config = {
   allowedMime: (process.env.ALLOWED_MIME || "application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/html,text/plain").split(","),
   ocrEnable: process.env.OCR_ENABLE === "true",
 
-  // RAG Configuration
-  ragTopK: parseInt(process.env.RAG_TOP_K) || 20,
+  // RAG Configuration - Optimisé pour CPU
+  ragTopK: parseInt(process.env.RAG_TOP_K) || 6,  // Équilibre entre performance et résultats
   ragCitationsMin: parseInt(process.env.RAG_CITATIONS_MIN) || 0,
-  ragConfidenceThreshold: parseFloat(process.env.RAG_CONFIDENCE_THRESHOLD) || 0.3,
-  rerankerMaxInputChars: parseInt(process.env.RERANKER_MAX_INPUT_CHARS, 10) || 180,
-  rerankerMaxCandidates: parseInt(process.env.RERANKER_MAX_CANDIDATES, 10) || 8,
-  rerankerAlpha: parseFloat(process.env.RERANKER_ALPHA) || 0.30,
-  rerankerBeta: parseFloat(process.env.RERANKER_BETA) || 0.70,
-  rerankerTimeoutMs: parseInt(process.env.RERANKER_TIMEOUT_MS, 10) || 30000,
-  llmChatTimeoutMs: parseInt(process.env.LLM_CHAT_TIMEOUT_MS, 10) || 90000,
-  llmNumPredict: parseInt(process.env.LLM_NUM_PREDICT, 10) || 400,
+  hnswEfSearch: parseInt(process.env.HNSW_EF_SEARCH) || 64,
+  ragBm25CoarseLimit: parseInt(process.env.RAG_BM25_COARSE_LIMIT) || 200,
+  ragConfidenceThreshold: parseFloat(process.env.RAG_CONFIDENCE_THRESHOLD) || 0.1,
+  ragMinCosineScore: parseFloat(process.env.RAG_MIN_COSINE_SCORE) || 0.15,
+  ragMinChunkLength: parseInt(process.env.RAG_MIN_CHUNK_LENGTH) || 30,
+  rerankerMaxInputChars: parseInt(process.env.RERANKER_MAX_INPUT_CHARS, 10) || 300,
+  rerankerMaxCandidates: parseInt(process.env.RERANKER_MAX_CANDIDATES, 10) || 4,  // Réduit de 8 à 4
+  rerankerAlpha: parseFloat(process.env.RERANKER_ALPHA) || 0.60,  // Augmenté: donner plus de poids au cosine (qui marche)
+  rerankerBeta: parseFloat(process.env.RERANKER_BETA) || 0.40,   // Réduit: moins de poids au rerank (scores trop bas)
+  rerankerTimeoutMs: parseInt(process.env.RERANKER_TIMEOUT_MS, 10) || 20000,
+  llmChatTimeoutMs: parseInt(process.env.LLM_CHAT_TIMEOUT_MS, 10) || 60000,
+  llmNumPredict: parseInt(process.env.LLM_NUM_PREDICT, 10) || 300,
+  llmTemperature: parseFloat(process.env.LLM_TEMPERATURE) || 0.1,
+  llmTopP: parseFloat(process.env.LLM_TOP_P) || 0.9,
+  llmRepeatPenalty: parseFloat(process.env.LLM_REPEAT_PENALTY) || 1.1,
 
   // Microservices
   rerankerApiUrl: process.env.RERANKER_API_URL || 'http://reranker:8000',
   llmApiUrl: process.env.LLM_API_URL || 'http://ollama:11434',
   llmModelName: process.env.LLM_MODEL_NAME || 'qwen2:7b-instruct',
+  clustererApiUrl: process.env.CLUSTERER_API_URL || 'http://clusterer:8002',
+
+  // LLM Multi-model routing (Phase 1)
+  llmModelFast: process.env.LLM_MODEL_FAST || 'qwen2.5:3b-instruct-q4_k_m',
+  llmModelDeep: process.env.LLM_MODEL_DEEP || 'qwen2:7b-instruct-q4_k_m',
+  llmModelMicro: process.env.LLM_MODEL_MICRO || 'tinyllama:latest',
+
+  // Studio Features
+  features: {
+    mindmap: process.env.FEATURE_MINDMAP !== 'false',
+    workspaces: process.env.FEATURE_WORKSPACES !== 'false',
+    realtimeMindmap: process.env.FEATURE_REALTIME_MINDMAP === 'true'
+  },
+  
+  // Studio Configuration
+  llmNodeSummaryModel: process.env.LLM_NODE_SUMMARY_MODEL || process.env.LLM_MODEL_NAME || 'qwen2:1.5b',
+  minClusterSize: parseInt(process.env.MIN_CLUSTER_SIZE, 10) || 5,
+  minSamples: parseInt(process.env.MIN_SAMPLES, 10) || 5,
+  clusterMetric: process.env.CLUSTER_METRIC || 'cosine',
 
   // URL Configuration
   backendExternalUrl: process.env.BACKEND_EXTERNAL_URL || '',

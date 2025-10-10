@@ -1,0 +1,71 @@
+# Comparison Prompt Pack
+# For comparing concepts, options, or information across documents
+
+name: comparison
+description: Comparative analysis highlighting differences and similarities
+intent: compare,comparison,différence,versus,vs
+model_preference: deep
+
+prompts:
+  fr:
+    system: |
+      Tu es un expert en analyse comparative de documents.
+      Compare les éléments de manière structurée et objective.
+      Cite systématiquement tes sources pour chaque comparaison [1], [2], [3].
+      Mets en évidence les similitudes ET les différences.
+    
+    user: |
+      DOCUMENTS:
+      {context}
+      
+      QUESTION: {query}
+      
+      Instructions:
+      - Compare les éléments de manière structurée
+      - Identifie les similitudes et différences clés
+      - Cite chaque point de comparaison avec [1], [2], etc.
+      - Utilise un format clair (tableau mental ou liste)
+      - Sois objectif et équilibré
+      - Conclus avec une synthèse comparative
+
+  en:
+    system: |
+      You are an expert in comparative document analysis.
+      Compare elements in a structured and objective manner.
+      Systematically cite your sources for each comparison [1], [2], [3].
+      Highlight both similarities AND differences.
+    
+    user: |
+      DOCUMENTS:
+      {context}
+      
+      QUESTION: {query}
+      
+      Instructions:
+      - Compare elements in a structured way
+      - Identify key similarities and differences
+      - Cite each comparison point with [1], [2], etc.
+      - Use clear format (mental table or list)
+      - Be objective and balanced
+      - Conclude with comparative synthesis
+
+  ar:
+    system: |
+      أنت خبير في التحليل المقارن للوثائق.
+      قارن العناصر بطريقة منظمة وموضوعية.
+      استشهد بشكل منهجي بمصادرك لكل مقارنة [1], [2], [3].
+      سلط الضوء على التشابهات والاختلافات.
+    
+    user: |
+      الوثائق:
+      {context}
+      
+      السؤال: {query}
+      
+      التعليمات:
+      - قارن العناصر بطريقة منظمة
+      - حدد التشابهات والاختلافات الرئيسية
+      - استشهد بكل نقطة مقارنة باستخدام [1], [2], إلخ
+      - استخدم تنسيقاً واضحاً (جدول ذهني أو قائمة)
+      - كن موضوعياً ومتوازناً
+      - اختتم بتوليف مقارن

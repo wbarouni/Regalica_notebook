@@ -4,7 +4,7 @@ const config = require('../config');
 const logger = require('../utils/logger');
 const { retrieveForQuery } = require('./query');
 const { rerank, selectTopCandidates } = require('./rerank');
-const { detectLanguage, generateAnswer } = require('./synthesize');
+const { detectLanguage, generateAnswer, generateAnswerJSON, generateAnswerWithPromptPack } = require('./synthesize');
 
 const router = express.Router();
 
@@ -17,16 +17,13 @@ async function logRagQuery(logData) {
   try {
     await client.query(`
       INSERT INTO ${config.dbSchema}.rag_logs 
-      (query, lang, topk, retrieved, reranked, answer, confidence)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      (query, answer, confidence, processing_time)
+      VALUES ($1, $2, $3, $4)
     `, [
       logData.query,
-      logData.lang,
-      logData.topk,
-      JSON.stringify(logData.retrieved),
-      JSON.stringify(logData.reranked),
       JSON.stringify(logData.answer),
-      logData.confidence
+      logData.confidence,
+      logData.processing_time || 0
     ]);
   } catch (error) {
     logger.error(`[rag/routes] Erreur enregistrement log: ${error.message}`);
@@ -43,13 +40,29 @@ router.post('/query', async (req, res) => {
   const startTime = Date.now();
   
   try {
-    const { query, top_k = config.ragTopK, lang } = req.body;
+    const { query, top_k = config.ragTopK, lang, depth, format = 'text' } = req.body;
 
     // Validation des paramètres
     if (!query || typeof query !== 'string' || !query.trim()) {
       return res.status(400).json({
         error: 'INVALID_QUERY',
         message: 'Requête manquante ou invalide'
+      });
+    }
+
+    // Validation depth (optionnel)
+    if (depth && depth !== 'high') {
+      return res.status(400).json({
+        error: 'INVALID_DEPTH',
+        message: 'depth doit être "high" ou undefined'
+      });
+    }
+
+    // Validation format (Phase 2)
+    if (format && !['text', 'json'].includes(format)) {
+      return res.status(400).json({
+        error: 'INVALID_FORMAT',
+        message: 'format doit être "text" ou "json"'
       });
     }
 
@@ -115,13 +128,21 @@ router.post('/answer', async (req, res) => {
   const startTime = Date.now();
   
   try {
-    const { query, top_k = config.ragTopK, lang } = req.body;
+    const { query, top_k = config.ragTopK, lang, depth, prompt_pack } = req.body;
 
     // Validation des paramètres
     if (!query || typeof query !== 'string' || !query.trim()) {
       return res.status(400).json({
         error: 'INVALID_QUERY',
         message: 'Requête manquante ou invalide'
+      });
+    }
+
+    // Validation depth (optionnel)
+    if (depth && depth !== 'high') {
+      return res.status(400).json({
+        error: 'INVALID_DEPTH',
+        message: 'depth doit être "high" ou undefined'
       });
     }
 
@@ -180,7 +201,25 @@ router.post('/answer', async (req, res) => {
     const selectedCandidates = selectTopCandidates(rerankedCandidates, 8);
 
     // 4. Génération de la réponse
-    const answerResult = await generateAnswer(query.trim(), selectedCandidates, detectedLang);
+    // Phase 1: Multi-model routing avec depth
+    // Phase 2: Support format JSON avec validation Zod
+    // Phase 3: Support prompt packs YAML
+    const format = req.body.format || 'text';
+    let answerResult;
+    
+    if (prompt_pack) {
+      // Phase 3: Utiliser prompt pack si spécifié
+      answerResult = await generateAnswerWithPromptPack(query.trim(), selectedCandidates, detectedLang, { 
+        depth, 
+        packName: prompt_pack 
+      });
+    } else if (format === 'json') {
+      // Phase 2: Mode JSON
+      answerResult = await generateAnswerJSON(query.trim(), selectedCandidates, detectedLang, { depth });
+    } else {
+      // Mode standard
+      answerResult = await generateAnswer(query.trim(), selectedCandidates, detectedLang, { depth });
+    }
 
     // 5. Logging de la requête complète
     const logData = {

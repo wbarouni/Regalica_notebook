@@ -7,6 +7,7 @@ import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { UploadDropzoneComponent } from '../features/upload/upload-dropzone.component';
 import { Document, DocumentFilter, IngestService } from '../services/ingest.service';
 import { ViewerService } from '../core/services/viewer.service';
+import { NotebookDataIsolatorService } from '../notebooks/notebook-data-isolator.service';
 
 @Component({
   selector: 'app-sidebar-sources',
@@ -176,16 +177,26 @@ import { ViewerService } from '../core/services/viewer.service';
               </svg>
             </div>
 
-            <!-- Action Button -->
-            <button class="document-action-btn"
-                    (click)="openDocument(doc, $event)"
-                    [disabled]="doc.status !== 'ready'"
-                    title="Open document">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-              </svg>
-            </button>
+            <!-- Action Buttons -->
+            <div class="document-actions">
+              <button class="document-action-btn"
+                      (click)="openDocument(doc, $event)"
+                      [disabled]="doc.status !== 'ready'"
+                      title="Open document">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+              </button>
+              
+              <button class="document-delete-btn"
+                      (click)="deleteDocument(doc, $event)"
+                      title="Delete document">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -237,7 +248,8 @@ export class SidebarSourcesComponent implements OnInit, OnDestroy {
 
   constructor(
     private ingestService: IngestService,
-    private viewerService: ViewerService
+    private viewerService: ViewerService,
+    private dataIsolator: NotebookDataIsolatorService
   ) {}
 
   ngOnInit(): void {
@@ -273,20 +285,32 @@ export class SidebarSourcesComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     
     try {
-      const response = await this.ingestService.getDocuments({
-        page: this.currentPage,
-        pageSize: this.pageSize,
-        ...this.filters
-      }).toPromise();
-      
-      if (response) {
-        this.documents = Array.isArray(response.items) ? response.items : [];
-        this.totalDocuments = typeof response.total === 'number' ? response.total : this.documents.length;
-        this.totalPages = typeof response.totalPages === 'number' ? response.totalPages : 1;
-      } else {
-        this.documents = [];
-        this.totalDocuments = 0;
+      // Check if in notebook context
+      if (this.dataIsolator.isInNotebookContext()) {
+        // Load ONLY notebook documents
+        console.log('[SidebarSources] Loading notebook-specific documents');
+        const docs = await this.dataIsolator.getDocuments().toPromise();
+        this.documents = docs || [];
+        this.totalDocuments = this.documents.length;
         this.totalPages = 1;
+        console.log('[SidebarSources] Loaded', this.documents.length, 'notebook documents');
+      } else {
+        // Normal behavior - load all documents
+        const response = await this.ingestService.getDocuments({
+          page: this.currentPage,
+          pageSize: this.pageSize,
+          ...this.filters
+        }).toPromise();
+        
+        if (response) {
+          this.documents = Array.isArray(response.items) ? response.items : [];
+          this.totalDocuments = typeof response.total === 'number' ? response.total : this.documents.length;
+          this.totalPages = typeof response.totalPages === 'number' ? response.totalPages : 1;
+        } else {
+          this.documents = [];
+          this.totalDocuments = 0;
+          this.totalPages = 1;
+        }
       }
     } catch (error) {
       console.error('Failed to load documents:', error);
@@ -442,6 +466,28 @@ export class SidebarSourcesComponent implements OnInit, OnDestroy {
       return `${diffDays} days ago`;
     } else {
       return date.toLocaleDateString();
+    }
+  }
+
+  /**
+   * Supprime un document
+   */
+  async deleteDocument(doc: Document, event: Event): Promise<void> {
+    event.stopPropagation();
+    
+    // Confirmation
+    const confirmDelete = confirm(`Supprimer "${doc.title}" ?\n\nCette action est irréversible.`);
+    if (!confirmDelete) return;
+
+    try {
+      await this.ingestService.deleteDocument(doc.id).toPromise();
+      console.log('[SidebarSources] Document deleted:', doc.id);
+      
+      // Refresh list
+      this.refreshDocuments();
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+      alert('Erreur lors de la suppression du document');
     }
   }
 }

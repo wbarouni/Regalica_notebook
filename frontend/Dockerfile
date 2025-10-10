@@ -1,24 +1,31 @@
-FROM node:lts-alpine
+# Build stage
+FROM node:lts-alpine AS build
 
 WORKDIR /app
 
-# Copier les fichiers de dépendances
+# Copy package files
 COPY package*.json ./
 
-# Installer les dépendances
-RUN npm ci
+# Install dependencies
+RUN npm install
 
-# Copier le code source
+# Copy source code
 COPY . .
 
-# Construire l'application
+# Build the application
 RUN npm run build
 
-# Installer un serveur web simple
-RUN npm install -g http-server
+# Production stage with Nginx
+FROM nginx:alpine
 
-# Exposer le port
+# Copy built application from build stage
+COPY --from=build /app/dist/frontend /usr/share/nginx/html
+
+# Copy custom Nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 80
 EXPOSE 80
 
-# Démarrer l'application
-CMD ["http-server", "dist/regalica-frontend", "-p", "80", "-a", "0.0.0.0"]
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]

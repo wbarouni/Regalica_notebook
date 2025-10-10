@@ -3,7 +3,7 @@ const config = require("../config");
 
 const pool = new Pool({
   connectionString: config.dbUrl,
-  ssl: config.dbUrl.includes("localhost") ? false : { rejectUnauthorized: false },
+  ssl: false
 });
 
 pool.on("connect", () => {

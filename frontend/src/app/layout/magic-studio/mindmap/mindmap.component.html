@@ -1,0 +1,133 @@
+<div class="mindmap-container">
+  <!-- Top Bar -->
+  <div class="mindmap-header">
+    <div class="header-left">
+      <h2 class="mindmap-title">Mind Map</h2>
+      <span class="node-count" *ngIf="state.data">
+        {{ state.data.nodes.length }} concepts
+      </span>
+    </div>
+
+    <div class="header-center">
+      <div class="search-box">
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="onSearch()"
+          placeholder="Search concepts..."
+          class="search-input"
+        />
+        <button (click)="onSearch()" class="search-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M7 13A6 6 0 1 0 7 1a6 6 0 0 0 0 12zM13 13l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button (click)="resetView()" class="icon-btn" title="Reset view">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0z" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="state.loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Generating mind map...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="state.error && !state.loading" class="error-state">
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" class="error-icon">
+      <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="2"/>
+      <path d="M24 16v12M24 32v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <p class="error-message">{{ state.error }}</p>
+    <button (click)="mindMapService.clearError()" class="retry-btn">
+      Dismiss
+    </button>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!state.data && !state.loading && !state.error" class="empty-state">
+    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" class="empty-icon">
+      <circle cx="32" cy="32" r="12" stroke="currentColor" stroke-width="2"/>
+      <circle cx="16" cy="20" r="8" stroke="currentColor" stroke-width="2"/>
+      <circle cx="48" cy="20" r="8" stroke="currentColor" stroke-width="2"/>
+      <circle cx="16" cy="44" r="8" stroke="currentColor" stroke-width="2"/>
+      <circle cx="48" cy="44" r="8" stroke="currentColor" stroke-width="2"/>
+      <path d="M24 28l-6-6M40 28l6-6M24 36l-6 6M40 36l6 6" stroke="currentColor" stroke-width="2"/>
+    </svg>
+    <h3>No Mind Map Yet</h3>
+    <p>Generate a mind map from your documents to see connections</p>
+  </div>
+
+  <!-- Graph Container -->
+  <div 
+    #svgContainer 
+    class="svg-container"
+    [class.hidden]="!state.data || state.loading"
+  ></div>
+
+  <!-- Details Panel -->
+  <div class="details-panel" [class.open]="state.selectedNode">
+    <div class="details-header">
+      <h3 class="details-title">{{ state.selectedNode?.label }}</h3>
+      <button (click)="closeDetails()" class="close-btn">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="details-content" *ngIf="state.selectedNode">
+      <!-- Summary -->
+      <div class="detail-section">
+        <h4 class="section-title">Summary</h4>
+        <p class="summary-text">{{ state.selectedNode.summary }}</p>
+      </div>
+
+      <!-- Citations -->
+      <div class="detail-section" *ngIf="state.selectedNode.citations.length > 0">
+        <h4 class="section-title">
+          Sources ({{ state.selectedNode.citations.length }})
+        </h4>
+        <div class="citations-list">
+          <div 
+            *ngFor="let citation of state.selectedNode.citations; let i = index" 
+            class="citation-item"
+          >
+            <div class="citation-header">
+              <span class="citation-number">[{{ i + 1 }}]</span>
+              <span class="citation-title">{{ citation.docTitle }}</span>
+              <span *ngIf="citation.page" class="citation-page">
+                Page {{ citation.page }}
+              </span>
+            </div>
+            <p class="citation-text">{{ citation.text }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metadata -->
+      <div class="detail-section">
+        <h4 class="section-title">Metadata</h4>
+        <div class="metadata-grid">
+          <div class="metadata-item">
+            <span class="metadata-label">Cluster ID</span>
+            <span class="metadata-value">{{ state.selectedNode.clusterId }}</span>
+          </div>
+          <div class="metadata-item">
+            <span class="metadata-label">Chunks</span>
+            <span class="metadata-value">{{ state.selectedNode.chunkIds.length }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

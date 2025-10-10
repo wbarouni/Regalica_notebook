@@ -1,9 +1,75 @@
 
-
 # Angular Cache
 frontend/.angular/cache/
-node_modules/
-dist/
-.env
-*.log
 
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+container-status.txt
+status.txt
+
+# Archive (cleanup artifacts)
+_archive/
+_archivedocs/
+_archivescripts/
+
+# Test files
+*.bak
+*.backup
+nul
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.coverage
+
+# Docker
+docker-compose.override.yml
+.dockerignore.local
+
+# Editor-specific
+*.sublime-*
+*~
+
+# Build and deployment artifacts
+*.pid
+*.seed
+*.pid.lock
+.npm
+.eslintcache
+.cache/

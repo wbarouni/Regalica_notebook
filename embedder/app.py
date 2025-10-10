@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configuration
-EMBED_MODEL_NAME = os.getenv('EMBED_MODEL_NAME', 'intfloat/multilingual-e5-large')
+EMBED_MODEL_NAME = os.getenv('EMBED_MODEL_NAME', 'sentence-transformers/all-MiniLM-L6-v2')
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 8000))
 

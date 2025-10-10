@@ -100,6 +100,64 @@ Le Bloc 3 implémente une pipeline RAG (Retrieval-Augmented Generation) complèt
 -   **Détection de Langue** : Détection automatique de la langue de la requête (fr, en, ar).
 -   **Interface Chat** : Une interface utilisateur Angular complète avec affichage des citations, score de confiance et temps de traitement.
 
+### Magic Studio : Fonctionnalités Avancées
+
+Magic Studio est un ensemble de fonctionnalités avancées qui transforment les réponses RAG en contenu interactif et enrichi.
+
+#### Fonctionnalités Principales
+
+**Mind Map (Carte Mentale) :**
+-   Génération automatique de cartes mentales à partir des réponses RAG
+-   Clustering intelligent des topics avec le microservice Clusterer (HDBSCAN)
+-   Visualisation interactive avec D3.js
+-   Navigation et exploration des concepts clés
+-   Mise à jour en temps réel via WebSocket
+
+**Podcast :**
+-   Génération automatique de scripts de podcast basés sur le contenu
+-   Conversion text-to-speech pour créer des podcasts audio
+-   Lecteur audio intégré avec contrôles de lecture
+-   Téléchargement des fichiers audio générés
+-   Support multilingue (fr, en, ar)
+
+**Actions :**
+-   Suggestions d'actions contextuelles basées sur les réponses
+-   Actions intelligentes adaptées au contenu
+-   Exécution d'actions avec feedback en temps réel
+-   Historique des actions effectuées
+
+#### Architecture Magic Studio
+
+Magic Studio utilise les services suivants :
+-   **Backend Node.js** : Routes `/api/studio/*` pour la logique métier
+-   **Clusterer Service** : Microservice Python pour le clustering de topics (HDBSCAN)
+-   **Socket.IO** : Communication WebSocket pour les mises à jour en temps réel
+-   **PostgreSQL** : Stockage des clusters et workspaces
+-   **Ollama** : Génération de scripts et contenu enrichi
+
+#### Utilisation
+
+1. **Posez une question** dans l'interface de chat
+2. **Attendez la réponse RAG** avec citations
+3. **Cliquez sur le bouton Magic** (⭐) qui apparaît après la première réponse
+4. **Explorez les onglets Magic Studio** :
+   -   **Mind Map** : Visualisez les concepts clés
+   -   **Podcast** : Écoutez une version audio du contenu
+   -   **Actions** : Découvrez les actions suggérées
+
+#### Configuration
+
+Magic Studio est activé par défaut. Pour le désactiver, modifiez les variables d'environnement :
+
+```bash
+REALTIME_MINDMAP_ENABLED=false
+STUDIO_FEATURES_ENABLED=false
+```
+
+**Ports utilisés :**
+-   Clusterer Service : `8002`
+-   WebSocket (Socket.IO) : intégré au backend (port `3000`)
+
 ### Bloc 2: Pipeline d'Ingestion
 
 #### Variables d'Environnement
@@ -187,4 +245,3 @@ make up
 npm start --prefix frontend
 npm start --prefix backend
 ```
-

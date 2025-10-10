@@ -91,6 +91,20 @@
   .sources-panel {
     grid-column: 1;
     overflow: hidden;
+    position: relative;
+    transition: width var(--transition-medium), opacity var(--transition-medium);
+    
+    // Collapsed state for Magic Studio
+    &.collapsed {
+      width: 48px;
+      min-width: 48px;
+      
+      // Hide the main content when collapsed
+      ::ng-deep app-sidebar-sources {
+        opacity: 0;
+        pointer-events: none;
+      }
+    }
   }
   
   .chat-panel {
@@ -100,10 +114,45 @@
     border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-lg);
     overflow: hidden;
+    transition: width var(--transition-medium);
   }
   
   .viewer-panel {
     grid-column: 3;
+    overflow: hidden;
+    transition: opacity var(--transition-medium), transform var(--transition-medium);
+  }
+  
+  .magic-studio-panel {
+    grid-column: 3;
+    overflow: hidden;
+    animation: slideInFromRight var(--transition-medium);
+  }
+}
+
+// Magic Studio Active State
+.shell-container.magic-studio-active {
+  .desktop-layout {
+    grid-template-columns: 48px 45% 55%;
+  }
+}
+
+// Sources Flyout (hover overlay)
+.sources-flyout {
+  position: absolute;
+  left: 48px;
+  top: 0;
+  bottom: 0;
+  width: 280px;
+  z-index: 1000;
+  pointer-events: auto;
+  
+  .flyout-content {
+    height: 100%;
+    background-color: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-xl);
     overflow: hidden;
   }
 }
@@ -319,6 +368,22 @@
   .desktop-layout {
     display: none;
   }
+  
+  // Magic Studio on tablet - stack panels vertically
+  .shell-container.magic-studio-active {
+    .tablet-layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr auto;
+      
+      .sources-panel {
+        height: 60px;
+      }
+      
+      .chat-panel {
+        grid-column: 1;
+      }
+    }
+  }
 }
 
 @media (max-width: 767px) {
@@ -335,6 +400,30 @@
     svg {
       width: 1rem;
       height: 1rem;
+    }
+  }
+  
+  // Magic Studio on mobile - simplified layout
+  .shell-container.magic-studio-active {
+    .mobile-layout {
+      .mobile-content {
+        // Magic Studio takes full screen on mobile
+        app-magic-studio {
+          height: 100%;
+          
+          // Make tabs stack vertically on very small screens
+          @media (max-width: 400px) {
+            ::ng-deep .studio-tabs {
+              flex-direction: column;
+              gap: 0.25rem;
+              
+              .tab-btn {
+                width: 100%;
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

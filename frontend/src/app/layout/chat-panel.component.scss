@@ -266,6 +266,35 @@
   }
 }
 
+// Citations inline cliquables (style ChatGPT)
+::ng-deep .inline-citation {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.25rem;
+  margin: 0 0.125rem;
+  background: #111827;
+  color: white;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  vertical-align: middle;
+  
+  &:hover {
+    background: #374151;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
 // Sources
 .message-sources {
   margin-top: 1rem;

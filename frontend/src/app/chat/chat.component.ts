@@ -1,13 +1,16 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { RagService, ChatMessage } from '../services/rag.service';
+import { RagService, ChatMessage, RagSource } from '../services/rag.service';
+import { InlineCitationsPipe } from './inline-citations.pipe';
+import { MindMapStateService } from '../services/mindmap-state.service';
 
 @Component({
   selector: 'app-chat',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, InlineCitationsPipe],
   templateUrl: './chat.component.html',
   styleUrls: ['./chat.component.scss']
 })
@@ -31,7 +34,11 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     "Y a-t-il des recommandations spécifiques ?"
   ];
 
-  constructor(private ragService: RagService) {}
+  constructor(
+    private ragService: RagService,
+    private router: Router,
+    private mindMapState: MindMapStateService
+  ) {}
 
   ngOnInit(): void {
     // S'abonner aux messages
@@ -47,11 +54,19 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.shouldScrollToBottom = true;
       }
     });
+
+    // Configurer window.citationClick pour les citations inline
+    (window as any).citationClick = (chunkId: string, citationNum: number) => {
+      this.handleCitationClick(chunkId, citationNum);
+    };
   }
 
   ngOnDestroy(): void {
     this.messagesSubscription?.unsubscribe();
     this.loadingSubscription?.unsubscribe();
+    
+    // Nettoyer window.citationClick
+    delete (window as any).citationClick;
   }
 
   ngAfterViewChecked(): void {
@@ -106,13 +121,27 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   /**
-   * Clique sur une citation
+   * Gère le clic sur une citation inline
+   */
+  handleCitationClick(chunkId: string, citationNum: number): void {
+    // Trouver la source correspondante dans le dernier message assistant
+    const lastAssistantMsg = [...this.messages].reverse().find(m => m.role === 'assistant');
+    if (lastAssistantMsg?.sources) {
+      const source = lastAssistantMsg.sources[citationNum - 1];
+      if (source) {
+        this.onCitationClick(source);
+      }
+    }
+  }
+
+  /**
+   * Clique sur une citation (placeholder pour futur viewer)
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onCitationClick(source: RagSource): void {
-
     // TODO: Implémenter la navigation vers le document/page
     // Cela sera fait dans le Bloc 10 avec le viewer
+    console.log('Citation clicked:', source);
   }
 
   /**
@@ -204,5 +233,75 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.queryInput.nativeElement.focus();
       }
     }, 100);
+  }
+
+  /**
+   * Génère un Mind Map pour un message spécifique
+   */
+  generateMindMapForMessage(message: ChatMessage): void {
+    if (message.role !== 'assistant' || !message.sources || message.sources.length === 0) {
+      return;
+    }
+
+    // Store in Mind Map state
+    this.mindMapState.setCurrentMindMap({
+      id: crypto.randomUUID(),
+      query: this.getQueryForMessage(message),
+      timestamp: new Date(),
+      nodes: [],
+      connections: [],
+      sourceMessageId: message.id
+    });
+
+    // Add to history
+    this.mindMapState.addToHistory(this.mindMapState.getCurrentMindMap()!);
+
+    // Navigate to Magic Studio Mind Map
+    this.router.navigate(['/magic-studio'], {
+      queryParams: { tab: 'mindmap' }
+    });
+  }
+
+  /**
+   * Obtient la requête associée à un message assistant
+   */
+  private getQueryForMessage(message: ChatMessage): string {
+    // Trouve le message user précédent
+    const messageIndex = this.messages.indexOf(message);
+    if (messageIndex > 0) {
+      const previousMessage = this.messages[messageIndex - 1];
+      if (previousMessage.role === 'user') {
+        return previousMessage.content;
+      }
+    }
+    return message.content.substring(0, 100);
+  }
+
+  /**
+   * Keyboard shortcuts handler
+   */
+  @HostListener('document:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent): void {
+    // Ctrl/Cmd + M → Generate Mind Map pour dernier message
+    if ((event.ctrlKey || event.metaKey) && event.key === 'm') {
+      event.preventDefault();
+      const lastAssistantMessage = [...this.messages]
+        .reverse()
+        .find(m => m.role === 'assistant' && m.sources && m.sources.length > 0);
+      
+      if (lastAssistantMessage) {
+        this.generateMindMapForMessage(lastAssistantMessage);
+      }
+    }
+  }
+
+  /**
+   * Vérifie si un message peut générer un Mind Map
+   */
+  canGenerateMindMap(message: ChatMessage): boolean {
+    return message.role === 'assistant' && 
+           !!message.sources && 
+           message.sources.length > 0 &&
+           !this.isNoAnswer(message);
   }
 }

@@ -2,15 +2,10 @@ FROM node:lts-alpine
 
 WORKDIR /app
 
-# Copier les fichiers de dépendances
 COPY package*.json ./
+RUN npm ci --only=production && npm install -g nodemon
 
-# Installer les dépendances
-RUN npm ci --only=production
-
-# Copier le code source
-COPY . .
+COPY src ./src
 
 EXPOSE 5200
-# Démarrer l'application (un seul CMD)
-CMD ["node", "src/server.js"]
+CMD ["nodemon", "--watch", "src", "src/server.js"]

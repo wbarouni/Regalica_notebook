@@ -1,16 +1,19 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
-
+import { trigger, state, style, transition, animate } from '@angular/animations';
 
 import { SidebarSourcesComponent } from './sidebar-sources.component';
 import { ChatPanelComponent } from './chat-panel.component';
 import { ViewerPanelComponent } from './viewer-panel.component';
 import { MagicButtonComponent } from './magic-studio/magic-button.component';
+import { MagicStudioComponent } from './magic-studio/magic-studio.component';
+import { NotebookBackButtonComponent } from '../notebooks/notebook-back-button.component';
 import { AppConfigService } from '../core/services/app-config.service';
 
 export type PanelLayout = 'desktop' | 'tablet' | 'mobile';
 export type ActivePanel = 'sources' | 'chat' | 'viewer';
+export type StudioPanel = 'mindmap' | 'workspaces' | 'actions' | null;
 
 @Component({
   selector: 'app-shell',
@@ -20,31 +23,56 @@ export type ActivePanel = 'sources' | 'chat' | 'viewer';
     SidebarSourcesComponent,
     ChatPanelComponent,
     ViewerPanelComponent,
-    MagicButtonComponent
+    MagicButtonComponent,
+    MagicStudioComponent,
+    NotebookBackButtonComponent
   ],
   template: `
     <div class="shell-container" 
          [class]="'layout-' + currentLayout"
+         [class.magic-studio-active]="magicStudioActive"
          [attr.data-theme]="currentTheme">
       
-      <!-- Desktop Layout: 3 panneaux côte à côte -->
+      <!-- Desktop Layout: 3 panneaux côte à côté -->
       <div class="desktop-layout" *ngIf="currentLayout === 'desktop'">
         <aside class="sources-panel panel-shadow" 
+               [class.collapsed]="magicStudioActive"
+               (mouseenter)="magicStudioActive && toggleSourcesFlyout(true)"
+               (mouseleave)="magicStudioActive && toggleSourcesFlyout(false)"
                role="complementary" 
                aria-label="Sources panel">
           <app-sidebar-sources></app-sidebar-sources>
+          
+          <!-- Sources Flyout (shown on hover when collapsed) -->
+          <div class="sources-flyout" 
+               *ngIf="magicStudioActive && showSourcesFlyout"
+               [@slideIn]>
+            <div class="flyout-content">
+              <app-sidebar-sources></app-sidebar-sources>
+            </div>
+          </div>
         </aside>
         
         <main class="chat-panel" 
+              [class.expanded]="magicStudioActive"
               role="main" 
               aria-label="Chat panel">
           <app-chat-panel></app-chat-panel>
         </main>
         
         <aside class="viewer-panel panel-shadow" 
+               *ngIf="!magicStudioActive"
                role="complementary" 
                aria-label="Document viewer">
           <app-viewer-panel></app-viewer-panel>
+        </aside>
+
+        <!-- Magic Studio Panel (replaces viewer when active) -->
+        <aside class="magic-studio-panel panel-shadow"
+               *ngIf="magicStudioActive"
+               role="complementary"
+               aria-label="Magic Studio">
+          <app-magic-studio></app-magic-studio>
         </aside>
       </div>
 
@@ -140,17 +168,32 @@ export type ActivePanel = 'sources' | 'chat' | 'viewer';
       </div>
 
       <!-- Magic Studio Button (toujours visible) -->
-      <app-magic-button></app-magic-button>
+      <app-magic-button (toggle)="toggleMagicStudio()" [active]="magicStudioActive"></app-magic-button>
 
+      <!-- Notebook Back Button (visible uniquement dans un notebook) -->
+      <app-notebook-back-button></app-notebook-back-button>
       
     </div>
   `,
+  animations: [
+    trigger('slideIn', [
+      state('void', style({ transform: 'translateX(-100%)', opacity: 0 })),
+      state('*', style({ transform: 'translateX(0)', opacity: 1 })),
+      transition(':enter', animate('300ms ease-out')),
+      transition(':leave', animate('200ms ease-in'))
+    ])
+  ],
   styleUrls: ['./shell.component.scss']
 })
 export class ShellComponent implements OnInit, OnDestroy {
   currentLayout: PanelLayout = 'desktop';
   activePanel: ActivePanel = 'chat';
   currentTheme: 'light' | 'dark' = 'light';
+  
+  // Magic Studio state
+  magicStudioActive = false;
+  activeStudioPanel: StudioPanel = 'mindmap';
+  showSourcesFlyout = false;
 
   private destroy$ = new Subject<void>();
 
@@ -278,5 +321,35 @@ export class ShellComponent implements OnInit, OnDestroy {
   private setupKeyboardShortcuts(): void {
     // Les raccourcis sont gérés dans onKeyDown
     // Cette méthode peut être étendue pour des raccourcis plus complexes
+  }
+
+  /**
+   * Toggle Magic Studio mode
+   */
+  toggleMagicStudio(): void {
+    this.magicStudioActive = !this.magicStudioActive;
+    
+    // Save preference
+    localStorage.setItem('magic-studio-active', String(this.magicStudioActive));
+    
+    // Reset studio panel when closing
+    if (!this.magicStudioActive) {
+      this.activeStudioPanel = 'mindmap';
+      this.showSourcesFlyout = false;
+    }
+  }
+
+  /**
+   * Set active studio panel
+   */
+  setStudioPanel(panel: StudioPanel): void {
+    this.activeStudioPanel = panel;
+  }
+
+  /**
+   * Toggle sources flyout
+   */
+  toggleSourcesFlyout(show: boolean): void {
+    this.showSourcesFlyout = show;
   }
 }

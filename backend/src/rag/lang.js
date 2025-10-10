@@ -16,6 +16,17 @@ function detectLanguage(text) {
     return 'en';
   }
 
+  // Détection explicite de langue mentionnée dans la query
+  if (/\b(français|francais|en français|en francais)\b/i.test(cleanText)) {
+    return 'fr';
+  }
+  if (/\b(english|in english)\b/i.test(cleanText)) {
+    return 'en';
+  }
+  if (/\b(arabe|arabic|en arabe|in arabic)\b/i.test(cleanText)) {
+    return 'ar';
+  }
+
   // Heuristiques pour textes très courts (< 20 caractères)
   if (cleanText.length < 20) {
     // Détection de caractères arabes
@@ -27,7 +38,7 @@ function detectLanguage(text) {
       return 'fr';
     }
     // Mots français courants
-    if (/\b(le|la|les|de|du|des|et|ou|à|dans|pour|avec|sur|par|ce|cette|ces|un|une)\b/i.test(cleanText)) {
+    if (/\b(le|la|les|de|du|des|et|ou|à|dans|pour|avec|sur|par|ce|cette|ces|un|une|analyse|résumé|résume)\b/i.test(cleanText)) {
       return 'fr';
     }
     // Mots anglais courants

@@ -14,3 +14,28 @@ body {
   line-height: 1.6;
   color: #333;
 }
+
+/* Citation Links Styling (Phase 4: Citations UX) */
+.citation-link {
+  @apply inline-flex items-center justify-center;
+  @apply text-xs font-semibold;
+  @apply text-blue-600 hover:text-blue-800;
+  @apply bg-blue-50 hover:bg-blue-100;
+  @apply border border-blue-300 hover:border-blue-500;
+  @apply rounded px-1 py-0.5;
+  @apply transition-all duration-200;
+  @apply cursor-pointer;
+  @apply no-underline;
+  @apply ml-0.5 mr-0.5;
+  vertical-align: super;
+  font-size: 0.7em;
+}
+
+.citation-link:hover {
+  @apply shadow-sm;
+  transform: translateY(-1px);
+}
+
+.citation-link:active {
+  transform: translateY(0);
+}
