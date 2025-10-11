@@ -85,14 +85,19 @@ const runMigrations = async () => {
       `);
       
       if (indexCheck.rows.length === 0) {
-        console.log('Creating HNSW index (embeddings present)');
-        await client.query(`
-          CREATE INDEX embeddings_vec_hnsw_idx 
-          ON nbk.embeddings 
-          USING hnsw (vec vector_cosine_ops)
-          WITH (m = 16, ef_construction = 64)
-        `);
-        console.log('HNSW index created successfully');
+        try {
+          console.log('Creating HNSW index (embeddings present)');
+          await client.query(`
+            CREATE INDEX embeddings_vec_hnsw_idx 
+            ON nbk.embeddings 
+            USING hnsw (vec vector_cosine_ops)
+            WITH (m = 16, ef_construction = 64)
+          `);
+          console.log('HNSW index created successfully');
+        } catch (hnswError) {
+          console.log('⚠️  HNSW index creation skipped:', hnswError.message);
+          console.log('    Index will be created automatically after next document upload');
+        }
       } else {
         console.log('HNSW index already exists');
       }

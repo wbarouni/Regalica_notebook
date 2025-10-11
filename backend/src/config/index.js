@@ -42,12 +42,12 @@ const config = {
   // Microservices
   rerankerApiUrl: process.env.RERANKER_API_URL || 'http://reranker:8001',
   llmApiUrl: process.env.LLM_API_URL || 'http://ollama:11434',
-  llmModelName: process.env.LLM_MODEL_NAME || 'qwen2:7b-instruct',
+  llmModelName: process.env.LLM_MODEL_NAME || 'qwen2.5:3b-instruct-q4_k_m',
   clustererApiUrl: process.env.CLUSTERER_API_URL || 'http://clusterer:8002',
 
   // LLM Multi-model routing (Phase 1)
   llmModelFast: process.env.LLM_MODEL_FAST || 'qwen2.5:3b-instruct-q4_k_m',
-  llmModelDeep: process.env.LLM_MODEL_DEEP || 'qwen2:7b-instruct-q4_k_m',
+  llmModelDeep: process.env.LLM_MODEL_DEEP || 'qwen2.5:7b-instruct-q4_k_m',
   llmModelMicro: process.env.LLM_MODEL_MICRO || 'tinyllama:latest',
 
   // Studio Features
@@ -58,7 +58,7 @@ const config = {
   },
   
   // Studio Configuration
-  llmNodeSummaryModel: process.env.LLM_NODE_SUMMARY_MODEL || process.env.LLM_MODEL_NAME || 'qwen2:1.5b',
+  llmNodeSummaryModel: process.env.LLM_NODE_SUMMARY_MODEL || process.env.LLM_MODEL_NAME || 'tinyllama:latest',
   minClusterSize: parseInt(process.env.MIN_CLUSTER_SIZE, 10) || 5,
   minSamples: parseInt(process.env.MIN_SAMPLES, 10) || 5,
   clusterMetric: process.env.CLUSTER_METRIC || 'cosine',

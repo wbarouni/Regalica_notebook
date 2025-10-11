@@ -153,12 +153,12 @@ async function generateAnswer(query, contextChunks, lang = 'en', options = {}) {
       options: {
         temperature: 0.2,
         top_p: 0.95,
-        num_predict: 150,  // Compromis: assez pour réponse complète, pas trop pour timeout
-        num_ctx: 1536,     // Compromis aussi
-        stop: ['\n\n\n', 'Sources:', 'Références:']  // Triple \n pour pas couper trop tôt
+        num_predict: 120,  // Réponses plus courtes et rapides
+        num_ctx: 1024,     // Réduit pour plus de vitesse
+        stop: ['\n\n\n', 'Sources:', 'Références:']
       }
     }, {
-      timeout: 180000 // 3 minutes pour les gros modèles
+      timeout: 30000 // 30 secondes max
     });
 
     const generatedText = response.data.message?.content || '';
@@ -313,12 +313,12 @@ async function generateAnswerJSON(query, contextChunks, lang = 'en', options = {
       stream: false,
       format: 'json',  // Force JSON mode in Ollama
       options: {
-        temperature: 0.1,  // Plus bas pour JSON structuré
+        temperature: 0.1,
         top_p: 0.9,
-        num_predict: 500
+        num_predict: 200  // Réduit pour JSON plus rapide
       }
     }, {
-      timeout: 180000
+      timeout: 40000 // 40 secondes pour JSON
     });
 
     const generatedText = response.data.message?.content || '';
@@ -457,10 +457,10 @@ async function generateAnswerWithPromptPack(query, contextChunks, lang = 'en', o
       options: {
         temperature: 0.2,
         top_p: 0.95,
-        num_predict: 400
+        num_predict: 150  // Réduit pour prompt packs
       }
     }, {
-      timeout: 180000
+      timeout: 35000 // 35 secondes
     });
 
     const generatedText = response.data.message?.content || '';
