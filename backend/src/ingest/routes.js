@@ -9,6 +9,7 @@ const { extractText } = require("./extract");
 const { normalizeText } = require("./normalize");
 const { chunkSections } = require("./chunk");
 const { generateEmbeddings } = require("./embed");
+const { ensureHNSWIndex } = require("../db/init");
 
 const router = express.Router();
 
@@ -411,6 +412,17 @@ const persistDocument = async ({ title, mime, bytes, sha256, extractionResult, c
     const embedTime = Date.now() - embedStart;
 
     await client.query("COMMIT");
+    
+    // Ensure HNSW index exists after first embeddings
+    try {
+      const indexResult = await ensureHNSWIndex(embeddingResult.embeddings[0].dim);
+      if (indexResult.created) {
+        logger.info(`[HNSW] Index created for dimension ${indexResult.dimension}`);
+      }
+    } catch (error) {
+      logger.warn(`[HNSW] Failed to create index: ${error.message}`);
+      // Don't fail the ingestion if index creation fails
+    }
 
     return {
       document,

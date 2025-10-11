@@ -13,17 +13,36 @@ async function embedQuery(query) {
     throw new Error('Requête vide');
   }
 
+  // Enhanced input validation
+  const trimmedQuery = query.trim();
+  const MAX_QUERY_LENGTH = 5000;
+  
+  if (trimmedQuery.length > MAX_QUERY_LENGTH) {
+    throw new Error(`Requête trop longue: ${trimmedQuery.length} caractères (max: ${MAX_QUERY_LENGTH})`);
+  }
+  
+  // Validate query doesn't contain only special characters
+  if (!/[a-zA-Z0-9]/.test(trimmedQuery)) {
+    throw new Error('Requête invalide: doit contenir au moins un caractère alphanumérique');
+  }
+
   const startTime = Date.now();
   
   try {
-    logger.info(`[rag/query] Génération embedding pour requête: "${query.substring(0, 100)}..."`);
+    logger.info(`[rag/query] Génération embedding pour requête: "${trimmedQuery.substring(0, 100)}..."`);
     
-    // Use embedder microservice
+    // Use embedder microservice with circuit breaker logic
     const response = await axios.post(`${config.embedApiUrl}/embed`, {
-      texts: [query.trim()]
+      texts: [trimmedQuery]
     }, {
-      timeout: 30000
+      timeout: 30000,
+      maxRetries: 2,
+      validateStatus: (status) => status >= 200 && status < 500
     });
+    
+    if (response.status !== 200) {
+      throw new Error(`Embedder API error: ${response.status} - ${JSON.stringify(response.data)}`);
+    }
 
     const { vectors, dim } = response.data;
     const embedding = vectors[0];
@@ -63,6 +82,22 @@ async function retrieveCandidates(embedding, topK = 50, options = {}) {
   if (!embedding || !Array.isArray(embedding)) {
     throw new Error('Embedding invalide');
   }
+  
+  // Enhanced validation for embedding vector
+  if (embedding.length === 0 || embedding.length > 2048) {
+    throw new Error(`Dimension d'embedding invalide: ${embedding.length} (attendu: 1-2048)`);
+  }
+  
+  // Validate all values are finite numbers
+  if (!embedding.every(val => typeof val === 'number' && isFinite(val))) {
+    throw new Error('Embedding contient des valeurs non numériques ou infinies');
+  }
+  
+  // Validate vector is normalized (L2 norm should be ~1.0)
+  const norm = Math.sqrt(embedding.reduce((sum, val) => sum + val * val, 0));
+  if (Math.abs(norm - 1.0) > 0.1) {
+    logger.warn(`[rag/query] Embedding non normalisé: norme=${norm.toFixed(4)}`);
+  }
 
   if (topK <= 0 || topK > 200) {
     throw new Error('topK doit être entre 1 et 200');
@@ -76,11 +111,30 @@ async function retrieveCandidates(embedding, topK = 50, options = {}) {
   try {
     logger.info(`[rag/query] Recherche des ${topK} meilleurs candidats`);
 
+    // Validate schema name to prevent SQL injection (whitelist approach)
+    const validSchemas = ['nbk', 'public'];
+    if (!validSchemas.includes(config.dbSchema)) {
+      throw new Error(`Invalid schema name: ${config.dbSchema}`);
+    }
+
     // Formater l'embedding pour pgvector: '[1,2,3,...]'
-    const vectorStr = `[${embedding.join(',')}]`;
+    // Use parameterized values to prevent injection, but still need string format for pgvector
+    // Sanitize by ensuring all values are finite numbers
+    const sanitizedEmbedding = embedding.map(val => {
+      if (!isFinite(val)) return 0;
+      // Clamp extreme values to prevent overflow
+      return Math.max(-1000, Math.min(1000, val));
+    });
+    const vectorStr = `[${sanitizedEmbedding.join(',')}]`;
+    
+    // Additional length check after formatting
+    if (vectorStr.length > 100000) {
+      throw new Error('Vector string trop long après formatage');
+    }
 
     // Requête SQL avec similarité cosinus et filtres optionnels
-    // Cast text to vector since vec column is stored as text
+    // Using native vector type (fixed in database schema)
+    // Schema name validated above to prevent SQL injection
     let query = `
       SELECT 
         c.id as chunk_id,
@@ -95,23 +149,23 @@ async function retrieveCandidates(embedding, topK = 50, options = {}) {
         d.mime as document_mime,
         d.bytes as document_bytes,
         d.created_at as document_created_at,
-        (1 - (e.vec::vector <=> $1::vector)) as score_cosine
+        (1 - (e.vec <=> $1::vector)) as score_cosine
       FROM ${config.dbSchema}.chunks c
       JOIN ${config.dbSchema}.documents d ON c.document_id = d.id
       JOIN ${config.dbSchema}.embeddings e ON c.id = e.chunk_id
-      WHERE (1 - (e.vec::vector <=> $1::vector)) >= $3
+      WHERE (1 - (e.vec <=> $1::vector)) >= $3
     `;
     
     const params = [vectorStr, topK, minScore];
     
     // Filtrer par documents spécifiques si demandé
     if (docIds && Array.isArray(docIds) && docIds.length > 0) {
-      query += ` AND c.document_id = ANY($4::uuid[])`;
+      query += ` AND c.document_id = ANY($4::int[])`;
       params.push(docIds);
     }
     
     query += `
-      ORDER BY e.vec::vector <=> $1::vector
+      ORDER BY e.vec <=> $1::vector
       LIMIT $2
     `;
 

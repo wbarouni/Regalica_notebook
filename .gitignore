@@ -73,3 +73,16 @@ docker-compose.override.yml
 .npm
 .eslintcache
 .cache/
+
+# Generated reports and temporary docs
+docs/reports/*.md
+!docs/reports/README.md
+
+# Test outputs
+playwright-report/
+test-results/
+coverage/
+
+# Uploads directory content (keep structure)
+uploads/*
+!uploads/.gitkeep

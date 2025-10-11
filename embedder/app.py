@@ -8,6 +8,7 @@ import os
 import time
 import logging
 from typing import List, Dict, Any
+from contextlib import asynccontextmanager
 import numpy as np
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -31,13 +32,6 @@ SUPPORTED_MODELS = {
     'intfloat/e5-large-v2': 1024
 }
 
-# Application FastAPI
-app = FastAPI(
-    title="Regalica Embedder",
-    description="Microservice de génération d'embeddings réels",
-    version="1.0.0"
-)
-
 # Variable globale pour le modèle
 model = None
 model_dim = None
@@ -51,10 +45,13 @@ class EmbedResponse(BaseModel):
     model: str
     processing_time_ms: int
 
-def load_model():
-    """Charge le modèle d'embeddings"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Gestion du cycle de vie de l'application (startup/shutdown)"""
+    # Startup: Chargement du modèle
     global model, model_dim
     
+    logger.info("Démarrage du microservice embedder")
     logger.info(f"Chargement du modèle: {EMBED_MODEL_NAME}")
     start_time = time.time()
     
@@ -72,12 +69,21 @@ def load_model():
     except Exception as e:
         logger.error(f"Erreur lors du chargement du modèle: {e}")
         raise
+    
+    yield  # L'application s'exécute ici
+    
+    # Shutdown: Nettoyage si nécessaire
+    logger.info("Arrêt du microservice embedder")
+    model = None
+    model_dim = None
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialisation au démarrage"""
-    logger.info("Démarrage du microservice embedder")
-    load_model()
+# Application FastAPI avec lifespan
+app = FastAPI(
+    title="Regalica Embedder",
+    description="Microservice de génération d'embeddings réels",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 @app.get("/health")
 async def health_check():
@@ -116,6 +122,17 @@ async def generate_embeddings(request: EmbedRequest):
     
     if len(request.texts) > 100:
         raise HTTPException(status_code=400, detail="Trop de textes (max 100)")
+    
+    # Validate text length - prevent memory exhaustion attacks
+    MAX_TEXT_LENGTH = 10000  # 10k characters per text
+    for i, text in enumerate(request.texts):
+        if not text or not text.strip():
+            raise HTTPException(status_code=400, detail=f"Texte {i} est vide")
+        if len(text) > MAX_TEXT_LENGTH:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Texte {i} trop long (max {MAX_TEXT_LENGTH} caractères, reçu {len(text)})"
+            )
     
     try:
         start_time = time.time()

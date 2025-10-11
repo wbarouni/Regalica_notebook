@@ -9,9 +9,10 @@ Ce document vous guide à travers les étapes d'installation, de configuration e
 Avant de commencer, assurez-vous d'avoir les outils suivants installés sur votre machine :
 
 -   **Docker & Docker Compose** : Pour la gestion des conteneurs.
--   **Node.js & npm** : Pour la gestion des dépendances et l'exécution des scripts (version LTS recommandée).
--   **Angular CLI** : L'interface de ligne de commande pour Angular (`npm install -g @angular/cli@17`).
+-   **Node.js v18+** : Pour la gestion des dépendances et l'exécution des scripts.
 -   **Git** : Pour le versionnement du code.
+
+**Note:** Angular CLI est inclus localement dans les dépendances du projet frontend.
 
 ## Démarrage Rapide
 

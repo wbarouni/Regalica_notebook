@@ -40,7 +40,7 @@ const config = {
   llmRepeatPenalty: parseFloat(process.env.LLM_REPEAT_PENALTY) || 1.1,
 
   // Microservices
-  rerankerApiUrl: process.env.RERANKER_API_URL || 'http://reranker:8000',
+  rerankerApiUrl: process.env.RERANKER_API_URL || 'http://reranker:8001',
   llmApiUrl: process.env.LLM_API_URL || 'http://ollama:11434',
   llmModelName: process.env.LLM_MODEL_NAME || 'qwen2:7b-instruct',
   clustererApiUrl: process.env.CLUSTERER_API_URL || 'http://clusterer:8002',

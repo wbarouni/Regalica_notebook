@@ -11,11 +11,13 @@
   "dependencies": {
     "axios": "^1.6.0",
     "cors": "^2.8.5",
-    "crypto": "^1.0.1",
     "dotenv": "^16.3.1",
-    "express": "^4.18.2",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.1.5",
     "franc": "^6.2.0",
+    "helmet": "^7.1.0",
     "html-to-text": "^9.0.5",
+    "js-yaml": "^4.1.0",
     "langs": "^2.0.0",
     "mammoth": "^1.6.0",
     "minhash": "^0.0.9",
@@ -26,7 +28,7 @@
     "pgvector": "^0.1.8",
     "socket.io": "^4.6.1",
     "uuid": "^9.0.1",
-    "zod": "^4.1.12"
+    "zod": "^3.22.4"
   },
   "engines": {
     "node": ">=18.0.0"

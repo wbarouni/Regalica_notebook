@@ -8,6 +8,7 @@ import os
 import time
 import logging
 from typing import List, Dict, Any
+from contextlib import asynccontextmanager
 import numpy as np
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -23,13 +24,6 @@ RERANKER_MODEL_NAME = os.getenv('RERANKER_MODEL_NAME', 'cross-encoder/ms-marco-M
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 8001))
 
-# Application FastAPI
-app = FastAPI(
-    title="Regalica Reranker",
-    description="Microservice de reranking pour pipeline RAG",
-    version="1.0.0"
-)
-
 # Variable globale pour le modèle
 model = None
 
@@ -42,10 +36,13 @@ class RerankResponse(BaseModel):
     processing_time_ms: int
     model: str
 
-def load_model():
-    """Charge le modèle de reranking"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Gestion du cycle de vie de l'application (startup/shutdown)"""
+    # Startup: Chargement du modèle
     global model
     
+    logger.info("Démarrage du microservice reranker")
     logger.info(f"Chargement du modèle de reranking: {RERANKER_MODEL_NAME}")
     start_time = time.time()
     
@@ -62,12 +59,20 @@ def load_model():
     except Exception as e:
         logger.error(f"Erreur lors du chargement du modèle: {e}")
         raise
+    
+    yield  # L'application s'exécute ici
+    
+    # Shutdown: Nettoyage si nécessaire
+    logger.info("Arrêt du microservice reranker")
+    model = None
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialisation au démarrage"""
-    logger.info("Démarrage du microservice reranker")
-    load_model()
+# Application FastAPI avec lifespan
+app = FastAPI(
+    title="Regalica Reranker",
+    description="Microservice de reranking pour pipeline RAG",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 @app.get("/health")
 async def health_check():
@@ -107,6 +112,23 @@ async def rerank_candidates(request: RerankRequest):
     
     if len(request.candidates) > 64:
         raise HTTPException(status_code=400, detail="Trop de candidats (max 64)")
+    
+    # Validate text lengths - prevent memory exhaustion attacks
+    MAX_QUERY_LENGTH = 5000  # 5k characters for query
+    MAX_CANDIDATE_LENGTH = 10000  # 10k characters per candidate
+    
+    if len(request.query) > MAX_QUERY_LENGTH:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Requête trop longue (max {MAX_QUERY_LENGTH} caractères, reçu {len(request.query)})"
+        )
+    
+    for i, candidate in enumerate(request.candidates):
+        if candidate and len(candidate) > MAX_CANDIDATE_LENGTH:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Candidat {i} trop long (max {MAX_CANDIDATE_LENGTH} caractères, reçu {len(candidate)})"
+            )
     
     # Rejeter les candidats vides
     valid_candidates = []
